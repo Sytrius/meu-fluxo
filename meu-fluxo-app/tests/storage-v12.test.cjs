@@ -12,7 +12,7 @@ const ctx={
  setTimeout(){},TextEncoder,TextDecoder,Uint8Array
 };
 ctx.globalThis=ctx;
-ctx.MeuFluxoBackups=backup;
+ctx.MeuFluxoBackups=backup;ctx.MeuFluxoFinance=require('../finance-v13.js');
 vm.createContext(ctx);
 vm.runInContext(source+'\nglobalThis.api={openDB,readData,saveTransaction,saveTransactionsBatch,removeTransaction,importBatch,validateImported,backupPayload,state};',ctx);
 const api=ctx.api;
