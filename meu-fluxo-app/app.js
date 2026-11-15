@@ -1,6 +1,6 @@
 'use strict';
 /* Meu Fluxo — PWA independente, sem CDN e sem telemetria. */
-const VERSION='1.3.0';
+const VERSION='1.3.1';
 const CATEGORIES = [
  {name:'Alimentação',emoji:'🥑',color:'#18a889',keywords:['mercado','supermercado','arroz','feijao','feijão','comida','almoço','almoco','jantar','lanche','cafe','café','queijo','coalho','coalio','pão','pao','padaria','restaurante','pizza','leite','fruta','verdura']},
  {name:'Moradia',emoji:'🏡',color:'#7c8cba',keywords:['aluguel','condominio','condomínio','energia','luz','água','agua','casa','gás','gas','internet','conta de luz']},
