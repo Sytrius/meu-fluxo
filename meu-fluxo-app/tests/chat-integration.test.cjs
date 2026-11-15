@@ -15,7 +15,7 @@ const dom={documentElement:{dataset:{}},querySelector(selector){
 },querySelectorAll(){return []},addEventListener(){}};
 const ctx={console,Intl,Date,Math,Number,String,Boolean,Array,Object,Set,Map,JSON,Promise,URL,Blob,crypto:webcrypto,document:dom,navigator:{onLine:true},
 localStorage:{getItem:k=>memory.get(k)||null,setItem:(k,v)=>memory.set(k,v)},setTimeout:()=>0};
-ctx.globalThis=ctx;ctx.isSecureContext=true;ctx.MeuFluxoChatParser=parser;ctx.confirm=()=>true;
+ctx.globalThis=ctx;ctx.isSecureContext=true;ctx.MeuFluxoChatParser=parser;ctx.MeuFluxoFinance=require('../finance-v13.js');ctx.confirm=()=>true;
 vm.createContext(ctx);
 vm.runInContext(source+'\nglobalThis.api={chatResponse,pendingHTML,pendingConfirm,openDB,readData,state,voiceErrorMessage,startSpeech};',ctx);
 test('chat monta lote sem salvar antes de confirmar; confirmacao duplica zero registros',async()=>{
