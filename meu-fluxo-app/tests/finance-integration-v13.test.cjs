@@ -24,7 +24,7 @@ const ctx={console,Intl,Date,Math,Number,String,Boolean,Array,Object,Map,Set,JSO
 ctx.globalThis=ctx;ctx.MeuFluxoFinance=F;ctx.MeuFluxoBackups=B;ctx.MeuFluxoChatParser=P;
 vm.createContext(ctx);
 vm.runInContext(financeUI,ctx);
-vm.runInContext(app+'\nuiToast=()=>{};globalThis.api={state,openDB,saveSettings,readData,saveTransaction,backupPayload,validateImported,groupPendingPurchase,doImport,render,pageHTML};',ctx);
+vm.runInContext(app+'\nuiToast=()=>{};globalThis.api={state,openDB,saveSettings,readData,saveTransaction,backupPayload,validateImported,groupPendingPurchase,doImport,render,pageHTML,validateFinancialReferences};',ctx);
 const api=ctx.api;
 const account={id:'a1',name:'Nubank',kind:'bank',openingCents:100000};
 const card={id:'c1',name:'Cartão Nubank',limitCents:200000,closingDay:25,dueDay:10};
@@ -79,4 +79,13 @@ test('importação mescla nova conta e lançamento sem descartar finanças locai
  assert.equal(current.settings.finance.accounts.length,2);
  assert.equal(current.entries.length,2);
  assert.equal(current.entries.find(e=>e.id==='from-backup').accountId,'a2');
+});
+
+test('fatura já paga impede exclusão ou diminuição da compra original',()=>{
+ const payment={id:'pay1',accountId:'a1',cardId:'c1',invoiceMonth:'2026-11',cents:3000,date:'2026-11-15'};
+ const fin=F.normalize({accounts:[account],cards:[card],payments:[payment]});
+ const purchased=E('purchase-card',5000,{cardId:'c1',method:'Crédito'});
+ assert.equal(api.validateFinancialReferences([purchased],fin),true);
+ assert.throws(()=>api.validateFinancialReferences([{...purchased,cents:2000}],fin),/supera/);
+ assert.throws(()=>api.validateFinancialReferences([{...purchased,deletedAt:'2026-11-15T12:00:00Z'}],fin),/supera/);
 });
