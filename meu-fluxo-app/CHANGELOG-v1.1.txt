@@ -1,0 +1,14 @@
+MEU FLUXO 1.1.0 — 15/11/2026
+- Perfis por conta Google: login via Firebase Authentication, condicionado a configuracao do proprietario.
+- Banco IndexedDB independente por identificador da conta; perfil local antigo preservado.
+- Exportar backup com senha e criptografia local PBKDF2-SHA256 (310 mil iteracoes) e AES-256-GCM.
+- Importar arquivo criptografado .mfbackup com senha ou backup JSON anterior.
+- Compartilhar backup criptografado pelo menu nativo de aplicativos, quando suportado.
+- Fallback para arquivo baixado e anexo manual pelo e-mail.
+- Impedir importacao acidental de backup de outra conta Google.
+- Testes automatizados de criptografia e separacao em armazenamento alternativo.
+
+LIMITACOES: sem configuracao Firebase login Google nao funciona. Contas nao sincronizam automaticamente.
+E-mail automatico nao implementado; usuario escolhe Gmail/servico de envio.
+Dados armazenados no browser nao sao criptografados em repouso, apenas backup .mfbackup.
+Nao usar em dispositivo compartilhado sem protecao adicional.

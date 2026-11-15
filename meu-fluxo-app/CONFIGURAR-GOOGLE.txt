@@ -1,0 +1,39 @@
+MEU FLUXO 1.1 — LOGIN GOOGLE (CONFIGURACAO DO ADMINISTRADOR)
+
+O login Google foi preparado, mas fica desativado até configurar um projeto Firebase.
+O app offline, perfis locais e backups continuam funcionando SEM Firebase.
+
+1. Entre em https://console.firebase.google.com/ e crie um projeto.
+2. Em Authentication > Sign-in method, ative Google.
+3. Em Authentication > Settings > Authorized domains, adicione sytrius.github.io.
+4. Em Configurações do projeto > Seus apps, registre um aplicativo Web.
+5. Copie o objeto firebaseConfig (chave PUBLICA do aplicativo Web) para firebase-config.js:
+
+window.MEU_FLUXO_FIREBASE_CONFIG = {
+  apiKey: '...',
+  authDomain: '...',
+  projectId: '...',
+  appId: '...'
+};
+
+6. Publique firebase-config.js junto ao site GitHub Pages.
+7. Abra o site por HTTPS e escolha Configurações > Entrar com Google.
+
+ATENCAO: isso e apenas LOGIN. Nenhum historico financeiro vai ao Firebase.
+Os dados da conta ficam no IndexedDB no aparelho atual e precisam ser exportados e importados em outros aparelhos.
+A conta Google nao criptografa nem bloqueia o banco local contra quem tem acesso ao mesmo perfil de navegador.
+O login pode exigir conexao e nao funciona no arquivo HTML aberto via file://.
+A configuração Web Firebase e publica, mas NUNCA use Admin SDK/service account em codigo do navegador.
+
+BACKUP POR E-MAIL
+
+Configurações > Enviar por e-mail cria backup .mfbackup com AES-256-GCM e senha escolhida por voce.
+Android: se o navegador oferecer compartilhamento de arquivos, escolha Gmail no menu de compartilhamento.
+Windows ou navegador sem suporte: o arquivo sera baixado e voce precisara anexar ao e-mail manualmente.
+Nao envie a senha no mesmo e-mail. Sem a senha, o arquivo nao pode ser restaurado.
+
+RESTAURO E PERFIS
+
+Importar aceita .mfbackup criptografado ou .json antigo sem criptografia.
+Um backup exportado de perfil Google so pode ser importado quando a mesma conta Google esta ativa.
+O historico original do Meu Fluxo 1.0 continua em "Perfil local".
