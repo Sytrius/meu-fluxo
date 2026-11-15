@@ -3,7 +3,7 @@
 (function(root){
   'use strict';
   const fold = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-  const moneyToken = /R\$\s*\d[\d.,]*|\b\d[\d.,]*\s*(?:reais?|contos?)\b/gi;
+  const moneyToken = /R\$\s*\d(?:[\d.,]*\d)?|\b\d(?:[\d.,]*\d)?\s*(?:reais?|contos?)\b/gi;
   function centsOf(value){
     let s=String(value).replace(/R\$|reais?|contos?/gi,'').replace(/\s/g,'');
     if(!/^\d[\d.,]*$/.test(s))return null;
