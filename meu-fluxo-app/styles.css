@@ -33,3 +33,8 @@
 .pending-entry-actions{display:flex;gap:5px;flex-wrap:wrap}
 .pending-summary{margin:12px 0;font-size:13px;font-weight:600}
 @media(max-width:650px){.pending-entry{align-items:flex-start;flex-direction:column}.pending-entry-actions{width:100%}}
+
+/* Ditado por voz: estado de escuta visível */
+.voice-active{color:white!important;background:#ad2d5a!important;border-color:#ad2d5a!important;box-shadow:0 0 0 3px rgba(173,45,90,.18)}
+.voice-status{font-size:12px;line-height:1.4;padding:10px 14px;color:var(--brand-dark);background:var(--brand-2);border-top:1px solid var(--line)}
+.voice-status[hidden]{display:none!important}
