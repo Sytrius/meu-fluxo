@@ -1,0 +1,54 @@
+MEU FLUXO — FINANÇAS OFFLINE
+Versão 1.0 (MVP funcional)
+
+O QUE FUNCIONA
+- Registro manual de receitas e despesas; categorias, naturezas, pagamento, estabelecimento, foto local e itens.
+- Parcelamento em até 12 meses, com divisão precisa dos centavos.
+- Dashboard mensal com evolução, categorias, resultado e comparações.
+- Histórico pesquisável e filtrável, edição e exclusão com opção de desfazer.
+- Orçamentos por categoria e análise local.
+- Assistente por regras locais para frases simples e consultas do mês (não é um modelo de IA generativa).
+- Backup completo JSON e importação de backup JSON por mesclagem ou substituição.
+- CSV para Excel/planilhas.
+- Dados persistidos localmente (IndexedDB; fallback localStorage quando indisponível).
+- Tema claro/escuro; responsivo; preparado como PWA offline.
+- Nenhuma conta de usuário, serviço bancário, Supabase ou rede publicitária.
+
+COMO TESTAR IMEDIATAMENTE NO WINDOWS
+1. Extraia todo este ZIP numa pasta.
+2. Abra o arquivo index.html com duplo clique no Edge/Chrome. Em navegadores compatíveis, é possível usar essa versão diretamente e fazer lançamentos.
+3. Nessa modalidade (arquivo local), a instalação PWA e o cache por Service Worker NÃO funcionam; ainda assim o aplicativo pode funcionar offline e salvar dados conforme as permissões do navegador.
+4. Para executar como site local de forma mais confiável, instale Python se necessário e, na pasta extraída, execute:
+   python -m http.server 8080
+   Depois abra http://localhost:8080 no navegador. Não feche a janela do servidor durante o uso.
+
+COMO INSTALAR EM ANDROID E WINDOWS COMO PWA
+- O aplicativo deve ser publicado em hospedagem estática via HTTPS (por exemplo GitHub Pages ou Cloudflare Pages). Envie apenas os arquivos do app, NUNCA os backups financeiros.
+- Abra o endereço publicado no Chrome Android e use menu > Adicionar à tela inicial / Instalar app.
+- No Edge/Chrome Windows use o menu de instalação de aplicativos ou ícone de instalar na barra de endereços.
+- Visite o aplicativo online UMA VEZ em cada dispositivo para permitir o armazenamento do cache. Depois a PWA continua funcionando offline; o navegador pode apagar o armazenamento em situações excepcionais.
+- O histórico não é compartilhado entre dispositivos automaticamente.
+
+TRANSFERIR O HISTÓRICO CELULAR -> PC (OU VICE-VERSA)
+1. No dispositivo de origem, vá a Configurações > Exportar backup completo (.json).
+2. Transfira o arquivo para o outro aparelho via Quick Share, Bluetooth, USB, e-mail, etc.
+3. No dispositivo de destino, entre em Configurações > Importar backup (.json).
+4. Escolha Mesclar (adiciona registros com ID ainda não existente) OU Substituir tudo (substitui toda a base local).
+5. A importação por Mesclar NÃO atualiza os registros editados com o mesmo ID em outro aparelho. Se houver edições nos dois dispositivos, o backup deve ser organizado conscientemente.
+6. Fotos de notas anexadas entram no JSON e aumentam o tamanho do backup.
+7. Para evitar perda, faça backups periódicos fora do navegador.
+
+PRIVACIDADE
+- Este projeto não faz chamadas a serviços externos para transmitir suas transações.
+- A foto da nota é anexada manualmente, SEM leitura automática (OCR).
+- O recurso de microfone depende das APIs do navegador e pode usar serviços online para reconhecimento. Não é garantido offline.
+- Arquivos .json/.csv NÃO são criptografados: mantenha-os privados.
+- É possível que o navegador limpe os dados locais em modo privado, por falta de espaço, limpezas manuais ou políticas do sistema. Use os backups.
+
+O QUE NÃO HÁ NESTA VERSÃO
+- IA generativa, OCR de notas, conexão com bancos, sincronização por nuvem, notificações, autenticação, aplicativo Android nativo (.apk), programa Windows nativo (.exe) ou publicidade.
+- Em PWA, instalar no Android/Windows usa o navegador; não exige .apk/.exe separados.
+
+LICENÇA / ENTREGA
+Código simples (HTML, CSS, JS) sem frameworks ou dependências externas, facilitando uso offline.
+O aplicativo e a documentação podem ser ajustados conforme necessidade.

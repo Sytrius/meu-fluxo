@@ -1,0 +1,24 @@
+INSTALAÇÃO NO ANDROID (PWA)
+
+O aplicativo foi criado como PWA, não como APK nativo. Para instalar pelo Chrome no Android, você precisa publicar os arquivos estáticos em um endereço HTTPS.
+
+CAMINHO GRATUITO: GITHUB PAGES
+1. Entre em github.com e crie uma conta, se ainda não tiver.
+2. Crie um repositório público com um nome como "meu-fluxo".
+3. Use "Add file" > "Upload files" para enviar TODOS os arquivos e a pasta icons do diretório meu-fluxo-app. Não envie backups .json de suas finanças!
+4. Na página do repositório, acesse Settings > Pages.
+5. Selecione "Deploy from a branch" > "main" > "/ (root)" > Save.
+6. O GitHub exibirá o endereço HTTPS publicado, normalmente no formato https://USUARIO.github.io/meu-fluxo/.
+7. No Android, abra o link pelo Google Chrome; no menu, escolha "Adicionar à tela inicial" ou "Instalar aplicativo".
+8. Aguarde a primeira abertura com internet. Depois de instalado e com o cache ativo, o aplicativo opera offline.
+9. No PC, abra a mesma URL no Edge ou Chrome e use o menu "Instalar aplicativo".
+
+IMPORTANTE
+- A hospedagem é somente dos arquivos do aplicativo, que são públicos. Nenhum histórico financeiro fica nesse repositório.
+- Os dados são exclusivos de cada navegador/aparelho. Troque arquivos JSON de backup entre dispositivos para levar seu histórico.
+- Abra o mesmo endereço de site em todas as instalações futuras; trocar de endereço/origem cria outro banco local.
+- Mesmo offline, o sistema pode apagar dados do navegador em certas situações. Faça backups frequentes.
+- A criação/configuração da conta e o upload precisam ser feitos por você.
+
+USO IMEDIATO SEM PUBLICAR
+No Windows, tente dar dois cliques em Meu-Fluxo-Offline-Abrir-no-Navegador.html (fora da pasta). É uma versão HTML única, sem instalar nada, que pode salvar dados localmente conforme permissões do navegador. Ela não pode ser instalada como PWA por estar em arquivo local.
