@@ -5,7 +5,7 @@ const ctx={console,Intl,Date,Math,Number,String,Boolean,Array,Object,Set,Map,JSO
  localStorage:{getItem:k=>mem.get(k)||null,setItem:(k,v)=>mem.set(k,v)},
  document:{addEventListener:()=>{},querySelector:()=>null,querySelectorAll:()=>[]},
  setTimeout:()=>0,
-};ctx.globalThis=ctx;
+};ctx.globalThis=ctx;ctx.MeuFluxoChatParser=require("../chat-parser.js");
 vm.createContext(ctx);
 vm.runInContext(source+'\nglobalThis.t={parseCents,monthAddDate,validDate,classify,chatResponse,stats,validateImported,backupPayload,saveTransaction,saveTransactionsBatch,readData,removeTransaction,importBatch,saveSettings,openDB,state,localFallback};',ctx);
 const t=ctx.t;
