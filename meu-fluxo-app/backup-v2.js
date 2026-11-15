@@ -6,7 +6,7 @@ function signature(e){
  return JSON.stringify([
    e.type,e.title,e.cents,e.date,e.category,e.method||'Outro',e.merchant||'',
    e.note||'',e.nature||'variable',!!e.recurring,e.receipt||null,
-   (e.items||[]).map(x=>[x.name,Number(x.qty),x.cents]),
+   (e.items||[]).map(x=>[x.name,Number(x.qty),x.cents,x.unit||'un']),
    e.installment||null,e.deletedAt||null,e.accountId||null,e.cardId||null
  ]);
 }
