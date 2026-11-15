@@ -67,7 +67,7 @@ function parse(text){
  const merchant=unknown.find(x=>/[a-zA-ZÀ-ÿ]{4}/.test(x)&&!/CNPJ|CPF|NFC|DOC\.?|FISCAL|DATA|HORA|CUPOM|EMISS|WWW|HTTP/i.test(x))?.slice(0,120)||'';
  const date=extractDate(lines);
  const sum=items.reduce((n,e)=>n+e.cents,0);
- return {items,total,merchant,date,raw:lines.join('\n'),sum,balanced:total!==null&&sum===total,warning:total!==null&&sum!==total?'A soma dos itens encontrados não coincide com o total da nota. Revise ou complete os itens antes de registrar.':items.length===0?'Nenhum item pôde ser reconhecido com segurança. Preencha os dados manualmente.':''};
+ return {items,total,merchant,date,raw:lines.join('\n'),sum,balanced:total!==null&&sum===total,warning:items.length===0?'Nenhum item pôde ser reconhecido com segurança. Preencha os dados manualmente.':total!==null&&sum!==total?'A soma dos itens encontrados não coincide com o total da nota. Revise ou complete os itens antes de registrar.':''};
 }
 function priceRecords(entries){
  const result=[];
