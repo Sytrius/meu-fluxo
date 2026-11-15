@@ -146,7 +146,26 @@ async function removeTransaction(id){
  });
 }
 async function saveSettings(){if(localFallback){const d=fallbackRead();d.settings=state.settings;fallbackWrite(d);return}await new Promise((res,rej)=>{const tx=db.transaction('settings','readwrite');tx.objectStore('settings').put({key:'app',value:state.settings});tx.oncomplete=res;tx.onerror=()=>rej(tx.error);tx.onabort=()=>rej(tx.error)})}
-async function importBatch(entries,settings,mode){if(localFallback){const d=fallbackRead();const old=mode==='replace'?[]:(d.entries||[]);const map=new Map(old.map(e=>[e.id,e]));for(const e of entries)if(!map.has(e.id))map.set(e.id,e);d.entries=[...map.values()];if(mode==='replace')d.settings=settings;fallbackWrite(d);return}await new Promise((res,rej)=>{const tx=db.transaction(['transactions','settings'],'readwrite');const s=tx.objectStore('transactions');if(mode==='replace'){s.clear();tx.objectStore('settings').put({key:'app',value:settings})}for(const e of entries){if(mode==='replace')s.put(e);else s.add(e).onerror=(evt)=>{if(evt.target.error?.name==='ConstraintError'){evt.preventDefault();evt.stopPropagation()}}}tx.oncomplete=res;tx.onerror=()=>rej(tx.error);tx.onabort=()=>rej(tx.error)})}
+async function importBatch(entries,settings,mode){
+ if(!['replace','merge','merge-reviewed'].includes(mode))throw Error('Modo de importação inválido.');
+ if(localFallback){
+  const d=fallbackRead(),initial=mode==='replace'?[]:(d.entries||[]),map=new Map(initial.map(e=>[e.id,e]));
+  for(const e of entries)if(mode!=='merge'||!map.has(e.id))map.set(e.id,e);
+  d.entries=[...map.values()];if(mode==='replace')d.settings=settings;
+  fallbackWrite(d);return;
+ }
+ await new Promise((resolve,reject)=>{
+  const tx=db.transaction(['transactions','settings'],'readwrite'),store=tx.objectStore('transactions');
+  if(mode==='replace'){store.clear();tx.objectStore('settings').put({key:'app',value:settings})}
+  for(const e of entries){
+   if(mode!=='merge')store.put(e);
+   else store.add(e).onerror=(evt)=>{
+    if(evt.target.error?.name==='ConstraintError'){evt.preventDefault();evt.stopPropagation()}
+   };
+  }
+  tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);
+ });
+}
 const state={entries:[],deletedEntries:[],settings:{...DEFAULT_SETTINGS},page:'dashboard',month:monthNow(),filter:{q:'',type:'all',category:'all'},pending:null,editId:null,editingReceipt:null,items:[],importBuffer:null,lastDeleted:null};
 function ordered(entries=state.entries){return [...entries].sort((a,b)=>b.date.localeCompare(a.date)||String(b.createdAt||'').localeCompare(String(a.createdAt||'')))}
 function monthEntries(m=state.month){return state.entries.filter(e=>e.date.startsWith(m))}
