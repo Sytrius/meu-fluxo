@@ -166,7 +166,7 @@ async function importBatch(entries,settings,mode){
   tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);
  });
 }
-const state={entries:[],deletedEntries:[],settings:{...DEFAULT_SETTINGS},page:'dashboard',month:monthNow(),filter:{q:'',type:'all',category:'all'},pending:null,editId:null,editingReceipt:null,items:[],importBuffer:null,lastDeleted:null};
+const state={entries:[],deletedEntries:[],importReview:null,settings:{...DEFAULT_SETTINGS},page:'dashboard',month:monthNow(),filter:{q:'',type:'all',category:'all'},pending:null,editId:null,editingReceipt:null,items:[],importBuffer:null,lastDeleted:null};
 function ordered(entries=state.entries){return [...entries].sort((a,b)=>b.date.localeCompare(a.date)||String(b.createdAt||'').localeCompare(String(a.createdAt||'')))}
 function monthEntries(m=state.month){return state.entries.filter(e=>e.date.startsWith(m))}
 function stats(m=state.month){const entries=monthEntries(m);const income=sum(entries.filter(e=>e.type==='income'));const expense=sum(entries.filter(e=>e.type==='expense'));return {income,expense,balance:income-expense,entries}}
@@ -273,13 +273,88 @@ function importModal(){openOverlay(`<div class="modal-head"><h2>Importar histór
 function safeReceipt(s){return typeof s==='string'&&/^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(s)&&s.length<2_500_000?s:null}
 function validateImported(obj){if(!obj||obj.app!=='meu-fluxo'||![1,2].includes(obj.schemaVersion)||!Array.isArray(obj.transactions)||obj.transactions.length>50000)throw Error('Arquivo não é um backup compatível do Meu Fluxo.');const ids=new Set();const arr=[];for(const raw of obj.transactions){if(!raw||typeof raw!=='object'||typeof raw.id!=='string'||raw.id.length>120||ids.has(raw.id))throw Error('Backup contém identificadores inválidos ou duplicados.');ids.add(raw.id);if(typeof raw.title!=='string'||raw.title.length>120||!['income','expense'].includes(raw.type)||!Number.isSafeInteger(raw.cents)||raw.cents<=0||raw.cents>999999999999||!validDate(raw.date)||!CATEGORIES.some(c=>c.name===raw.category))throw Error('Backup contém uma transação inválida.');const items=Array.isArray(raw.items)?raw.items:[];if(items.length>300||items.some(it=>typeof it.name!=='string'||it.name.length>100||!Number.isSafeInteger(it.cents)||it.cents<0||!Number.isFinite(Number(it.qty))))throw Error('Backup contém itens inválidos.');arr.push({id:raw.id,title:raw.title,type:raw.type,cents:raw.cents,date:raw.date,category:raw.category,merchant:String(raw.merchant||'').slice(0,120),note:String(raw.note||'').slice(0,800),method:METHODS.includes(raw.method)?raw.method:'Outro',nature:['variable','recurring','occasional','discretionary'].includes(raw.nature)?raw.nature:'variable',recurring:!!raw.recurring,receipt:safeReceipt(raw.receipt),items:items.map(it=>({name:it.name,qty:Number(it.qty),cents:it.cents})),installment:raw.installment||null,createdAt:typeof raw.createdAt==='string'?raw.createdAt:'',updatedAt:typeof raw.updatedAt==='string'?raw.updatedAt:(typeof raw.createdAt==='string'?raw.createdAt:''),deletedAt:typeof raw.deletedAt==='string'&&/^\d{4}-\d{2}-\d{2}T/.test(raw.deletedAt)?raw.deletedAt:null})}
  const importedSettings=obj.settings&&typeof obj.settings==='object'?obj.settings:{};const budgets={};for(const c of CATEGORIES){const b=importedSettings.budgets?.[c.name];if(Number.isSafeInteger(b)&&b>=0&&b<=999999999999)budgets[c.name]=b}const chat=Array.isArray(importedSettings.chat)?importedSettings.chat.slice(-80).filter(x=>x&&['user','assistant'].includes(x.role)&&typeof x.text==='string').map(x=>({role:x.role,text:x.text.slice(0,700),date:typeof x.date==='string'?x.date:''})):[];const settings={...DEFAULT_SETTINGS,theme:importedSettings.theme==='dark'?'dark':'light',defaultMethod:METHODS.includes(importedSettings.defaultMethod)?importedSettings.defaultMethod:'Pix',budgets,chat};return {entries:arr,settings}}
-async function readImportFile(){const file=$('#import-file')?.files?.[0];if(!file)throw Error('Selecione um arquivo JSON.');if(file.size>40*1024*1024)throw Error('Backup muito grande. Limite de 40 MB por importação.');const content=await file.text();let parsedFile=JSON.parse(content);if(parsedFile?.format==='meu-fluxo-encrypted-v1'){
- const password=prompt('Digite a senha usada para criptografar este backup:');if(password===null)return;if(!password)throw Error('Informe a senha do backup.');parsedFile=await decryptBackup(parsedFile,password)
+async function readImportFile(){
+ const file=$('#import-file')?.files?.[0];
+ if(!file)throw Error('Selecione um arquivo de backup.');
+ if(file.size>40*1024*1024)throw Error('Backup muito grande. Limite de 40 MB.');
+ let parsedFile=JSON.parse(await file.text());
+ if(parsedFile?.format==='meu-fluxo-encrypted-v1'){
+  const password=prompt('Digite a senha usada para criptografar este backup:');
+  if(password===null)return;
+  if(!password)throw Error('Informe a senha do backup.');
+  parsedFile=await decryptBackup(parsedFile,password);
  }else if(file.name.endsWith('.mfbackup'))throw Error('Formato criptografado inválido.');
- const parsed=validateImported(parsedFile);if(parsedFile.profile?.kind==='google'&& (activeProfile.kind!=='google'||activeProfile.id!==parsedFile.profile.id)){
- throw Error('Este backup pertence a outra conta Google. Entre com a conta de origem para restaurar.');
- }state.importBuffer=parsed;const exist=new Set(state.entries.map(e=>e.id));const news=parsed.entries.filter(e=>!exist.has(e.id)).length;$('#import-preview').innerHTML=`<div class="note"><b>${parsed.entries.length} transações</b> no backup · <b>${news} novas</b> neste aparelho.<br><br><b>Mesclar:</b> adiciona somente registros novos, sem substituir alterações feitas nos já existentes.<br><b>Substituir:</b> apaga o histórico atual e restaura o conteúdo do arquivo, incluindo preferências e orçamentos.</div><div class="modal-actions"><button class="btn btn-outline" data-action="import-merge">${ico('plus')} Mesclar (${news})</button><button class="btn btn-danger" data-action="import-replace">${ico('refresh')} Substituir tudo</button></div>`}
-async function doImport(mode){if(!state.importBuffer)return;const entries=state.importBuffer.entries;const settings=state.importBuffer.settings;if(mode==='replace'){const ok=confirm(`ATENÇÃO: substituir todos os ${state.entries.length} registros locais pelos ${entries.length} do arquivo? Os registros que não estiverem no backup serão perdidos. Faça backup antes.`);if(!ok)return}else if(!confirm(`Adicionar registros novos do backup sem alterar os existentes?`))return;const newEntries=entries.filter(e=>!state.entries.some(x=>x.id===e.id));const count=newEntries.length;await importBatch(mode==='replace'?entries:newEntries,settings,mode);state.importBuffer=null;state.pending=null;await reload();closeOverlay();state.page='dashboard';render();uiToast(mode==='replace'?`Backup restaurado: ${entries.length} registros.`:`Importação concluída: ${count} novos registros.`)}
+ const verified=await globalThis.MeuFluxoBackups.verify(parsedFile);
+ const parsed=validateImported(parsedFile);
+ if(parsedFile.profile?.kind==='google'&&(activeProfile.kind!=='google'||activeProfile.id!==parsedFile.profile.id)){
+  throw Error('Este backup pertence a outra conta Google. Entre com a conta de origem para restaurar.');
+ }
+ state.importBuffer=parsed;
+ state.importReview=globalThis.MeuFluxoBackups.compare([...state.entries,...state.deletedEntries],parsed.entries);
+ const review=state.importReview;
+ const conflictsHTML=review.conflicts.slice(0,100).map(({id,local,backup})=>`
+ <div class="import-conflict-row">
+  <div><strong>${esc(local.title||backup.title)}</strong><small>${esc(formatDate(local.date))} · Neste aparelho: ${local.deletedAt?'excluído':fmt(local.cents)} · Backup: ${backup.deletedAt?'excluído':fmt(backup.cents)}</small></div>
+  <select class="subtle-select" data-import-choice="${esc(id)}" aria-label="Resolver conflito em ${esc(local.title||backup.title)}">
+   <option value="default">Usar escolha geral</option>
+   <option value="local">Manter deste aparelho</option>
+   <option value="backup">Usar versão do backup</option>
+  </select>
+ </div>`).join('');
+ const conflictGroup=review.conflicts.length?`
+ <div class="note" style="margin-top:14px">
+  <strong>${review.conflicts.length} registro(s) com divergência</strong>.
+  Nenhum deles será substituído sem sua escolha. Selecione como resolver os conflitos:
+ </div>
+ <div class="setting-row"><label for="import-conflict-default">Escolha geral para conflitos</label>
+ <select id="import-conflict-default" class="subtle-select" required>
+  <option value="">Escolha uma opção</option>
+  <option value="local">Manter os dados deste aparelho</option>
+  <option value="backup">Usar os dados do backup</option>
+ </select></div>
+ <div class="import-conflict-list">${conflictsHTML}</div>
+ ${review.conflicts.length>100?'<p class="help">Mostrando 100 diferenças. As demais seguirão a escolha geral.</p>':''}`:'';
+ $('#import-preview').innerHTML=`
+ <div class="note"><b>${parsed.entries.length} registros</b> no backup ·
+ <b>${review.newEntries.length} novos</b> ·
+ <b>${review.identical.length} iguais</b> ·
+ <b>${review.conflicts.length} divergentes</b>.
+ ${verified.legacy?'<br>Backup antigo (v1): sem checksum, mas compatível.':'<br>Verificação de integridade SHA-256 aprovada.'}
+ <br><br>Mesclar adiciona registros novos. Para IDs divergentes, você escolhe qual versão manter.
+ Substituir apaga o histórico atual e usa exclusivamente o backup.</div>
+ ${conflictGroup}
+ <div class="modal-actions">
+  <button class="btn btn-outline" data-action="import-merge">${ico('plus')} Mesclar com revisão</button>
+  <button class="btn btn-danger" data-action="import-replace">${ico('refresh')} Substituir tudo</button>
+ </div>`;
+}
+async function doImport(mode){
+ if(!state.importBuffer||!state.importReview)return;
+ const backup=state.importBuffer,review=state.importReview;
+ if(mode==='replace'){
+  const ok=confirm('ATENÇÃO: esta operação substituirá todo o histórico atual, inclusive exclusões e edições. Faça backup deste dispositivo antes. Continuar?');
+  if(!ok)return;
+  const again=confirm(`Confirma substituir os registros atuais pelos ${backup.entries.length} registros do backup?`);
+  if(!again)return;
+  await importBatch(backup.entries,backup.settings,'replace');
+  uiToast('Histórico substituído pelo backup.');
+ }else if(mode==='merge'){
+  let chosen=[];
+  if(review.conflicts.length){
+   const overall=$('#import-conflict-default')?.value;
+   if(!['local','backup'].includes(overall))throw Error('Escolha o que fazer com os conflitos antes de mesclar.');
+   const decisions=new Map($$('[data-import-choice]').map(el=>[el.dataset.importChoice,el.value]));
+   chosen=review.conflicts.filter(({id})=>(decisions.get(id)==='backup'||(decisions.get(id)!=='local'&&overall==='backup'))).map(x=>x.backup);
+  }
+  const additions=[...review.newEntries,...chosen];
+  if(!additions.length){uiToast('Nenhum registro novo para importar.');return}
+  if(!confirm(`Mesclar ${review.newEntries.length} registro(s) novo(s) e substituir ${chosen.length} registro(s) conflitante(s)?`))return;
+  await importBatch(additions,backup.settings,'merge-reviewed');
+  uiToast(`Mesclagem concluída: ${review.newEntries.length} novos, ${chosen.length} divergências resolvidas usando o backup.`);
+ }else throw Error('Modo de importação inválido.');
+ state.importBuffer=null;state.importReview=null;state.pending=null;
+ await reload();closeOverlay();state.page='dashboard';render();
+}
 function backupPayload(){return {app:'meu-fluxo',schemaVersion:2,exportedAt:new Date().toISOString(),version:VERSION,profile:{kind:activeProfile.kind,id:activeProfile.id,email:activeProfile.email||null},transactions:ordered([...state.entries,...state.deletedEntries]),settings:state.settings}}
 // Criptografia local WebCrypto: PBKDF2 SHA-256 + AES-256-GCM com salt/IV aleatórios.
 const bytesToBase64=bytes=>{let out='';for(let i=0;i<bytes.length;i+=0x8000)out+=String.fromCharCode(...bytes.subarray(i,i+0x8000));return btoa(out)};
