@@ -26,6 +26,7 @@ test('exclusão reaparece corretamente como tombstone e resiste a backup/restaur
  assert.equal(data.entries.length,0);
  assert.equal(data.deletedEntries.length,1);
  assert.match(data.deletedEntries[0].deletedAt,/^2026-/);
+ api.state.entries=data.entries;api.state.deletedEntries=data.deletedEntries;
  const payload=api.backupPayload();
  assert.equal(payload.schemaVersion,2);
  assert.equal(payload.transactions.length,1);
