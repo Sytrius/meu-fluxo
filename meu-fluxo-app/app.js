@@ -108,7 +108,7 @@ function toggleProfileMenu(){const menu=$('#profile-popover'),trigger=$('.profil
 function closeProfileMenu(){const menu=$('#profile-popover'),trigger=$('.profile-trigger');if(menu)menu.hidden=true;if(trigger)trigger.setAttribute('aria-expanded','false')}
 async function switchProfile(profile){
  if(db){db.close();db=null}localFallback=false;
- activeProfile=profile;state.entries=[];state.deletedEntries=[];state.importBuffer=null;state.importReview=null;state.settings={...DEFAULT_SETTINGS};state.pending=null;state.importBuffer=null;state.lastDeleted=null;
+ activeProfile=profile;state.entries=[];state.deletedEntries=[];state.importBuffer=null;state.importReview=null;state.importFinanceReview=null;state.settings={...DEFAULT_SETTINGS};state.pending=null;state.importBuffer=null;state.lastDeleted=null;
  await openDB();await reload();saveSelectedProfile(profile);state.page='dashboard';closeOverlay();render();
 }
 
@@ -175,12 +175,12 @@ async function importBatch(entries,settings,mode){
  if(localFallback){
   const d=fallbackRead(),initial=mode==='replace'?[]:(d.entries||[]),map=new Map(initial.map(e=>[e.id,e]));
   for(const e of entries)if(mode!=='merge'||!map.has(e.id))map.set(e.id,e);
-  d.entries=[...map.values()];if(mode==='replace')d.settings=settings;
+  d.entries=[...map.values()];if(mode==='replace'||mode==='merge-reviewed')d.settings=settings;
   fallbackWrite(d);return;
  }
  await new Promise((resolve,reject)=>{
   const tx=db.transaction(['transactions','settings'],'readwrite'),store=tx.objectStore('transactions');
-  if(mode==='replace'){store.clear();tx.objectStore('settings').put({key:'app',value:settings})}
+  if(mode==='replace'){store.clear();tx.objectStore('settings').put({key:'app',value:settings})}else if(mode==='merge-reviewed'){tx.objectStore('settings').put({key:'app',value:settings})}
   for(const e of entries){
    if(mode!=='merge')store.put(e);
    else store.add(e).onerror=(evt)=>{
@@ -190,7 +190,7 @@ async function importBatch(entries,settings,mode){
   tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);
  });
 }
-const state={entries:[],deletedEntries:[],importReview:null,settings:{...DEFAULT_SETTINGS},page:'dashboard',month:monthNow(),filter:{q:'',type:'all',category:'all'},pending:null,editId:null,editingReceipt:null,items:[],importBuffer:null,lastDeleted:null};
+const state={entries:[],deletedEntries:[],importReview:null,importFinanceReview:null,settings:{...DEFAULT_SETTINGS},page:'dashboard',month:monthNow(),filter:{q:'',type:'all',category:'all'},pending:null,editId:null,editingReceipt:null,items:[],importBuffer:null,lastDeleted:null};
 function ordered(entries=state.entries){return [...entries].sort((a,b)=>b.date.localeCompare(a.date)||String(b.createdAt||'').localeCompare(String(a.createdAt||'')))}
 function monthEntries(m=state.month){return state.entries.filter(e=>e.date.startsWith(m))}
 function stats(m=state.month){const entries=monthEntries(m);const income=sum(entries.filter(e=>e.type==='income'));const expense=sum(entries.filter(e=>e.type==='expense'));return {income,expense,balance:income-expense,entries}}
@@ -323,6 +323,7 @@ function validateImported(obj){if(!obj||obj.app!=='meu-fluxo'||![1,2].includes(o
 async function readImportFile(){
  state.importBuffer=null;
  state.importReview=null;
+ state.importFinanceReview=null;
  if($('#import-preview'))$('#import-preview').innerHTML='';
  const file=$('#import-file')?.files?.[0];
  if(!file)throw Error('Selecione um arquivo de backup.');
@@ -341,6 +342,7 @@ async function readImportFile(){
  }
  state.importBuffer=parsed;
  state.importReview=globalThis.MeuFluxoBackups.compare([...state.entries,...state.deletedEntries],parsed.entries);
+ state.importFinanceReview=globalThis.MeuFluxoFinance.merge(state.settings.finance,parsed.settings.finance,'local');
  const review=state.importReview;
  const conflictsHTML=review.conflicts.slice(0,100).map(({id,local,backup})=>`
  <div class="import-conflict-row">
@@ -373,6 +375,7 @@ async function readImportFile(){
  <br><br>Mesclar adiciona registros novos. Para IDs divergentes, você escolhe qual versão manter.
  Substituir apaga o histórico atual e usa exclusivamente o backup.</div>
  ${conflictGroup}
+ ${state.importFinanceReview.conflicts.length||Object.values(parsed.settings.finance).some(a=>a.length)?`<div class="note"><strong>Contas, cartões e movimentações</strong>: ${parsed.settings.finance.accounts.length} conta(s), ${parsed.settings.finance.cards.length} cartão(ões), ${parsed.settings.finance.transfers.length} transferência(s), ${parsed.settings.finance.payments.length} pagamento(s) no backup.${state.importFinanceReview.conflicts.length?`<br><strong>${state.importFinanceReview.conflicts.length} divergência(s) financeira(s)</strong>. Escolha como tratá-las:`:'<br>Novos registros financeiros também serão mesclados.'}</div>${state.importFinanceReview.conflicts.length?`<div class="setting-row"><label for="import-finance-choice">Conflitos em contas/cartões</label><select class="subtle-select" id="import-finance-choice"><option value="">Escolha uma opção</option><option value="local">Manter este aparelho</option><option value="backup">Usar dados do backup</option></select></div>`:''}`:''}
  <div class="modal-actions">
   <button class="btn btn-outline" data-action="import-merge">${ico('plus')} Mesclar com revisão</button>
   <button class="btn btn-danger" data-action="import-replace">${ico('refresh')} Substituir tudo</button>
