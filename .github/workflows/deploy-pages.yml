@@ -23,6 +23,23 @@ jobs:
     steps:
       - name: Baixar arquivos
         uses: actions/checkout@v4
+      - name: Preparar OCR português para execução local
+        run: |
+          npm install --prefix "$RUNNER_TEMP/meu-fluxo-ocr" --no-audit --no-fund --ignore-scripts --no-save \
+            tesseract.js@7.0.0 tesseract.js-core@7.0.0 @tesseract.js-data/por@1.0.0
+          DEPS="$RUNNER_TEMP/meu-fluxo-ocr/node_modules"
+          DEST="meu-fluxo-app/vendor/ocr"
+          mkdir -p "$DEST/core" "$DEST/lang"
+          cp "$DEPS/tesseract.js/dist/tesseract.min.js" "$DEST/tesseract.min.js"
+          cp "$DEPS/tesseract.js/dist/worker.min.js" "$DEST/worker.min.js"
+          cp "$DEPS"/tesseract.js-core/tesseract-core*.wasm.js "$DEST/core/"
+          cp "$DEPS"/tesseract.js-core/tesseract-core*.wasm "$DEST/core/"
+          cp "$DEPS/@tesseract.js-data/por/4.0.0_best_int/por.traineddata.gz" "$DEST/lang/por.traineddata.gz"
+          test -s "$DEST/tesseract.min.js"
+          test -s "$DEST/worker.min.js"
+          test -s "$DEST/core/tesseract-core-simd-lstm.wasm.js"
+          test -s "$DEST/lang/por.traineddata.gz"
+          gzip -t "$DEST/lang/por.traineddata.gz"
       - name: Verificar sintaxe e executar testes
         run: |
           node --check meu-fluxo-app/app.js
@@ -31,6 +48,8 @@ jobs:
           node --check meu-fluxo-app/backup-v2.js
           node --check meu-fluxo-app/finance-v13.js
           node --check meu-fluxo-app/finance-ui-v13.js
+          node --check meu-fluxo-app/receipts-v14.js
+          node --check meu-fluxo-app/receipts-ui-v14.js
           node --test meu-fluxo-app/tests/*.cjs
       - name: Configurar Pages
         uses: actions/configure-pages@v5
