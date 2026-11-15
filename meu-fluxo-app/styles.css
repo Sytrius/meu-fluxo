@@ -38,3 +38,25 @@
 .voice-active{color:white!important;background:#ad2d5a!important;border-color:#ad2d5a!important;box-shadow:0 0 0 3px rgba(173,45,90,.18)}
 .voice-status{font-size:12px;line-height:1.4;padding:10px 14px;color:var(--brand-dark);background:var(--brand-2);border-top:1px solid var(--line)}
 .voice-status[hidden]{display:none!important}
+
+/* Meu Fluxo 1.3 — contas, cartões e faturas */
+.fin-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin:16px 0}
+.fin-heading,.fin-line,.fin-inline{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.fin-heading{margin-bottom:16px}
+.fin-money{display:block;font-size:clamp(21px,2.5vw,30px);font-weight:800;letter-spacing:-.7px;line-height:1.35;overflow-wrap:anywhere}
+.fin-account .panel-sub{margin:12px 0 0}
+.fin-total,.fin-summary-banner{display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.fin-total .note{max-width:460px}
+.fin-card{margin-bottom:18px}
+.fin-subheading{font-size:14px;margin:22px 0 12px}
+.fin-line{padding:14px 0;border-bottom:1px solid var(--line)}
+.fin-line:last-child{border-bottom:0}
+.fin-line small{display:block;font-size:11px;color:var(--muted);margin-top:6px;line-height:1.6}
+.fin-line strong{overflow-wrap:anywhere}
+.fin-inline{gap:12px;flex-wrap:wrap;justify-content:flex-end}
+.fin-summary-banner{margin:0 0 20px}
+.pending-source-label{font-size:11px;color:var(--muted);margin-left:auto}
+.pending-source{max-width:190px;min-width:140px}
+.fin-account .eyebrow{display:block;margin-bottom:9px}
+@media(max-width:850px){.mobile-nav{justify-content:space-between;overflow-x:auto;scrollbar-width:thin;gap:0;padding-left:8px;padding-right:8px}.mobile-nav button{flex:0 0 61px;min-width:61px;padding:5px 6px}.fin-total,.fin-summary-banner{align-items:flex-start}}
+@media(max-width:540px){.fin-line{align-items:flex-start;flex-direction:column}.fin-inline{width:100%;justify-content:space-between}.pending-source{max-width:100%;width:100%}.pending-source-label{margin-left:0}.fin-grid{grid-template-columns:1fr}}
