@@ -23,6 +23,11 @@ jobs:
     steps:
       - name: Baixar arquivos
         uses: actions/checkout@v4
+      - name: Verificar sintaxe e executar testes
+        run: |
+          node --check meu-fluxo-app/app.js
+          node --check meu-fluxo-app/sw.js
+          node --test meu-fluxo-app/tests/*.cjs
       - name: Configurar Pages
         uses: actions/configure-pages@v5
         with:
