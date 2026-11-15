@@ -15,13 +15,13 @@ function validLink(e){
  const f=finance();
  if(e.accountId&&e.cardId)throw Error('Escolha somente uma conta ou cartão.');
  if(e.accountId&&!f.accounts.some(x=>x.id===e.accountId))throw Error('A conta selecionada não existe.');
- if(e.cardId&&(!f.cards.some(x=>x.id===e.cardId)||e.type!=='expense'))throw Error('Cartão só pode ser vinculado a despesa.');
+ if(e.cardId&&(!f.cards.some(x=>x.id===e.cardId)||e.type!=='expense'))throw Error('Cartão só pode ser vinculado a despesa.');if(e.accountId&&e.method==='Crédito')throw Error('Para uma compra no crédito, selecione o cartão cadastrado, não uma conta bancária.');
  return true;
 }
 function pendingSource(e,i){return `<label class="pending-source-label" for="pending-source-${i}">Conta ou cartão</label><select class="subtle-select pending-source" id="pending-source-${i}" data-fin-pending-index="${i}">${sourceOptions(e.accountId,e.cardId,e.type)}</select>`}
 function changePendingSource(input){
  if(!state.pending)return;const i=Number(input.dataset.finPendingIndex),list=state.pending.kind==='batch'?state.pending.entries:[state.pending],e=list[i];if(!e)return;
- const source=sourceFromValue(input.value);Object.assign(e,source);validLink(e);
+ const source=sourceFromValue(input.value);Object.assign(e,source);if(e.cardId)e.method='Crédito';else if(e.method==='Crédito')e.method=state.settings.defaultMethod==='Crédito'?'Pix':state.settings.defaultMethod||'Pix';validLink(e);
 }
 function summary(){
  const f=finance();if(!f.accounts.length)return '';
