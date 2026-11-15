@@ -22,3 +22,14 @@
 .profile-popover-actions{padding:8px}
 .profile-popover-actions button{width:100%;display:block;text-align:left;padding:12px 11px;border:0;background:transparent;color:var(--text);border-radius:9px;font-size:13px;font-weight:650}
 .profile-popover-actions button:hover,.profile-popover-actions button:focus-visible{background:var(--brand-2);color:var(--brand-dark)}
+
+/* Revisão de lançamentos no chat */
+.pending-detail{display:flex;flex-direction:column;gap:10px;padding:0!important;overflow:hidden}
+.pending-entry{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border-bottom:1px solid var(--line)}
+.pending-entry:last-child{border-bottom:0}
+.pending-entry-main{display:flex;flex-direction:column;gap:5px;min-width:0}
+.pending-entry-main strong{font-size:13px;overflow-wrap:anywhere}
+.pending-entry-main span{color:var(--muted);font-size:12px}
+.pending-entry-actions{display:flex;gap:5px;flex-wrap:wrap}
+.pending-summary{margin:12px 0;font-size:13px;font-weight:600}
+@media(max-width:650px){.pending-entry{align-items:flex-start;flex-direction:column}.pending-entry-actions{width:100%}}
