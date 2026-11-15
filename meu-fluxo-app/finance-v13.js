@@ -76,6 +76,8 @@ function checkTransfer(input,finance){
 }
 function checkPayment(input,finance,transactions){
  const p=normPayment(input);
+ const now=new Date();const current=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+ if(p.date>current)throw Error('Agendamento de pagamento futuro ainda não está disponível. Selecione uma data até hoje.');
  if(!finance.accounts.some(x=>x.id===p.accountId))throw Error('Conta pagadora não existe.');
  const card=finance.cards.find(x=>x.id===p.cardId);
  if(!card)throw Error('Cartão não cadastrado.');
