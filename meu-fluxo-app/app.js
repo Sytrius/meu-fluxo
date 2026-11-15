@@ -116,10 +116,35 @@ function reqP(r){return new Promise((res,rej)=>{r.onsuccess=()=>res(r.result);r.
 async function openDB(){if(!('indexedDB' in globalThis)){localFallback=true;return}try{db=await new Promise((res,rej)=>{const r=indexedDB.open(profileDbName(),1);r.onupgradeneeded=()=>{const d=r.result;if(!d.objectStoreNames.contains('transactions'))d.createObjectStore('transactions',{keyPath:'id'});if(!d.objectStoreNames.contains('settings'))d.createObjectStore('settings',{keyPath:'key'})};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);r.onblocked=()=>rej(new Error('Banco bloqueado'))})}catch(e){console.warn('IndexedDB indisponível',e);localFallback=true}}
 function fallbackRead(){try{return JSON.parse(localStorage.getItem(profileFallbackKey())||'{}')}catch{return {}}}
 function fallbackWrite(data){localStorage.setItem(profileFallbackKey(),JSON.stringify(data))}
-async function readData(){if(localFallback){const d=fallbackRead();return {entries:Array.isArray(d.entries)?d.entries:[],settings:{...DEFAULT_SETTINGS,...(d.settings||{})}}}const tx=db.transaction(['transactions','settings'],'readonly');const [entries,settingsRow]=await Promise.all([reqP(tx.objectStore('transactions').getAll()),reqP(tx.objectStore('settings').get('app'))]);return {entries,settings:{...DEFAULT_SETTINGS,...(settingsRow?.value||{})}}}
+async function readData(){
+ let records,settings;
+ if(localFallback){
+  const d=fallbackRead();records=Array.isArray(d.entries)?d.entries:[];
+  settings={...DEFAULT_SETTINGS,...(d.settings||{})};
+ }else{
+  const tx=db.transaction(['transactions','settings'],'readonly');
+  const [all,row]=await Promise.all([reqP(tx.objectStore('transactions').getAll()),reqP(tx.objectStore('settings').get('app'))]);
+  records=all;settings={...DEFAULT_SETTINGS,...(row?.value||{})};
+ }
+ return {entries:records.filter(x=>!x.deletedAt),deletedEntries:records.filter(x=>!!x.deletedAt),settings};
+}
 async function saveTransaction(entry){if(localFallback){const d=fallbackRead();d.entries=Array.isArray(d.entries)?d.entries:[];const i=d.entries.findIndex(e=>e.id===entry.id);if(i>=0)d.entries[i]=entry;else d.entries.push(entry);fallbackWrite(d);return}await new Promise((res,rej)=>{const tx=db.transaction('transactions','readwrite');tx.objectStore('transactions').put(entry);tx.oncomplete=res;tx.onerror=()=>rej(tx.error);tx.onabort=()=>rej(tx.error)})}
 async function saveTransactionsBatch(entries){if(localFallback){const d=fallbackRead();const map=new Map((d.entries||[]).map(e=>[e.id,e]));for(const e of entries)map.set(e.id,e);d.entries=[...map.values()];fallbackWrite(d);return}await new Promise((res,rej)=>{const tx=db.transaction('transactions','readwrite');const store=tx.objectStore('transactions');for(const e of entries)store.put(e);tx.oncomplete=res;tx.onerror=()=>rej(tx.error);tx.onabort=()=>rej(tx.error)})}
-async function removeTransaction(id){if(localFallback){const d=fallbackRead();d.entries=(d.entries||[]).filter(e=>e.id!==id);fallbackWrite(d);return}await new Promise((res,rej)=>{const tx=db.transaction('transactions','readwrite');tx.objectStore('transactions').delete(id);tx.oncomplete=res;tx.onerror=()=>rej(tx.error);tx.onabort=()=>rej(tx.error)})}
+async function removeTransaction(id){
+ const now=new Date().toISOString();
+ if(localFallback){
+  const d=fallbackRead();
+  d.entries=(d.entries||[]).map(e=>e.id===id?{...e,deletedAt:now,updatedAt:now}:e);
+  fallbackWrite(d);
+  return;
+ }
+ await new Promise((resolve,reject)=>{
+  const tx=db.transaction('transactions','readwrite'),store=tx.objectStore('transactions');
+  const request=store.get(id);
+  request.onsuccess=()=>{if(request.result)store.put({...request.result,deletedAt:now,updatedAt:now})};
+  tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);
+ });
+}
 async function saveSettings(){if(localFallback){const d=fallbackRead();d.settings=state.settings;fallbackWrite(d);return}await new Promise((res,rej)=>{const tx=db.transaction('settings','readwrite');tx.objectStore('settings').put({key:'app',value:state.settings});tx.oncomplete=res;tx.onerror=()=>rej(tx.error);tx.onabort=()=>rej(tx.error)})}
 async function importBatch(entries,settings,mode){if(localFallback){const d=fallbackRead();const old=mode==='replace'?[]:(d.entries||[]);const map=new Map(old.map(e=>[e.id,e]));for(const e of entries)if(!map.has(e.id))map.set(e.id,e);d.entries=[...map.values()];if(mode==='replace')d.settings=settings;fallbackWrite(d);return}await new Promise((res,rej)=>{const tx=db.transaction(['transactions','settings'],'readwrite');const s=tx.objectStore('transactions');if(mode==='replace'){s.clear();tx.objectStore('settings').put({key:'app',value:settings})}for(const e of entries){if(mode==='replace')s.put(e);else s.add(e).onerror=(evt)=>{if(evt.target.error?.name==='ConstraintError'){evt.preventDefault();evt.stopPropagation()}}}tx.oncomplete=res;tx.onerror=()=>rej(tx.error);tx.onabort=()=>rej(tx.error)})}
 const state={entries:[],deletedEntries:[],settings:{...DEFAULT_SETTINGS},page:'dashboard',month:monthNow(),filter:{q:'',type:'all',category:'all'},pending:null,editId:null,editingReceipt:null,items:[],importBuffer:null,lastDeleted:null};
