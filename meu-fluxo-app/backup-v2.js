@@ -7,7 +7,7 @@ function signature(e){
    e.type,e.title,e.cents,e.date,e.category,e.method||'Outro',e.merchant||'',
    e.note||'',e.nature||'variable',!!e.recurring,e.receipt||null,
    (e.items||[]).map(x=>[x.name,Number(x.qty),x.cents]),
-   e.installment||null,e.deletedAt||null
+   e.installment||null,e.deletedAt||null,e.accountId||null,e.cardId||null
  ]);
 }
 function compare(local,incoming){
