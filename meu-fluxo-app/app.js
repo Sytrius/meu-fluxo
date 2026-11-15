@@ -1,8 +1,8 @@
 'use strict';
 /* Meu Fluxo — PWA independente, sem CDN e sem telemetria. */
-const VERSION='1.1.4';
+const VERSION='1.1.5';
 const CATEGORIES = [
- {name:'Alimentação',emoji:'🥑',color:'#18a889',keywords:['mercado','supermercado','arroz','feijao','feijão','comida','almoço','almoco','jantar','lanche','cafe','café','padaria','restaurante','pizza','leite','fruta','verdura']},
+ {name:'Alimentação',emoji:'🥑',color:'#18a889',keywords:['mercado','supermercado','arroz','feijao','feijão','comida','almoço','almoco','jantar','lanche','cafe','café','queijo','coalho','coalio','pão','pao','padaria','restaurante','pizza','leite','fruta','verdura']},
  {name:'Moradia',emoji:'🏡',color:'#7c8cba',keywords:['aluguel','condominio','condomínio','energia','luz','água','agua','casa','gás','gas','internet','conta de luz']},
  {name:'Transporte',emoji:'🚘',color:'#e1a35b',keywords:['uber','99','gasolina','combustivel','combustível','onibus','ônibus','transporte','passagem','moto','carro','estacionamento']},
  {name:'Saúde',emoji:'💊',color:'#d1749c',keywords:['farmacia','farmácia','medicamento','remedio','remédio','consulta','dentista','exame','saúde']},
