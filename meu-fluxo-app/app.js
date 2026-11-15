@@ -381,31 +381,53 @@ async function readImportFile(){
   <button class="btn btn-danger" data-action="import-replace">${ico('refresh')} Substituir tudo</button>
  </div>`;
 }
+function validateFinancialReferences(records,finance){
+ const f=globalThis.MeuFluxoFinance.normalize(finance);
+ const bank=new Set(f.accounts.map(a=>a.id)),cards=new Set(f.cards.map(c=>c.id));
+ for(const e of records){
+  if(e.accountId&&!bank.has(e.accountId))throw Error('Há um lançamento vinculado a uma conta não importada.');
+  if(e.cardId&&!cards.has(e.cardId))throw Error('Há uma compra vinculada a um cartão não importado.');
+  if(e.cardId&&e.type!=='expense')throw Error('Uma receita não pode estar vinculada a cartão de crédito.');
+ }
+ for(const card of f.cards){
+  const months=new Set(f.payments.filter(p=>p.cardId===card.id).map(p=>p.invoiceMonth));
+  for(const m of months)if(globalThis.MeuFluxoFinance.invoice(card,records,f,m).remaining<0)
+   throw Error('O pagamento supera as despesas da fatura '+m+' de '+card.name+'. Revise conflitos de lançamentos ou restaure o backup completo.');
+ }
+ return true;
+}
 async function doImport(mode){
  if(!state.importBuffer||!state.importReview)return;
  const backup=state.importBuffer,review=state.importReview;
  if(mode==='replace'){
-  const ok=confirm('ATENÇÃO: esta operação substituirá todo o histórico atual, inclusive exclusões e edições. Faça backup deste dispositivo antes. Continuar?');
-  if(!ok)return;
-  const again=confirm(`Confirma substituir os registros atuais pelos ${backup.entries.length} registros do backup?`);
-  if(!again)return;
+  if(!confirm('ATENÇÃO: substituir todos os dados do aparelho pelo backup? Faça backup antes de continuar.'))return;
+  if(!confirm('Confirma a substituição do histórico, contas, cartões, transferências e faturas?'))return;
+  validateFinancialReferences(backup.entries,backup.settings.finance);
   await importBatch(backup.entries,backup.settings,'replace');
-  uiToast('Histórico substituído pelo backup.');
+  uiToast('Backup restaurado por completo.');
  }else if(mode==='merge'){
   let chosen=[];
   if(review.conflicts.length){
    const overall=$('#import-conflict-default')?.value;
-   if(!['local','backup'].includes(overall))throw Error('Escolha o que fazer com os conflitos antes de mesclar.');
+   if(!['local','backup'].includes(overall))throw Error('Escolha como resolver os conflitos entre lançamentos.');
    const decisions=new Map($$('[data-import-choice]').map(el=>[el.dataset.importChoice,el.value]));
-   chosen=review.conflicts.filter(({id})=>(decisions.get(id)==='backup'||(decisions.get(id)!=='local'&&overall==='backup'))).map(x=>x.backup);
+   chosen=review.conflicts.filter(({id})=>decisions.get(id)==='backup'||(decisions.get(id)!=='local'&&overall==='backup')).map(x=>x.backup);
   }
+  const financeOption=state.importFinanceReview?.conflicts.length?$('#import-finance-choice')?.value:'local';
+  if(!['local','backup'].includes(financeOption))throw Error('Escolha como resolver os conflitos de contas e cartões.');
+  const merged=globalThis.MeuFluxoFinance.merge(state.settings.finance,backup.settings.finance,financeOption).finance;
+  const nextSettings={...state.settings,finance:merged};
   const additions=[...review.newEntries,...chosen];
-  if(!additions.length){uiToast('Nenhum registro novo para importar.');return}
-  if(!confirm(`Mesclar ${review.newEntries.length} registro(s) novo(s) e substituir ${chosen.length} registro(s) conflitante(s)?`))return;
-  await importBatch(additions,backup.settings,'merge-reviewed');
-  uiToast(`Mesclagem concluída: ${review.newEntries.length} novos, ${chosen.length} divergências resolvidas usando o backup.`);
+  const changedFinance=JSON.stringify(globalThis.MeuFluxoFinance.normalize(state.settings.finance))!==JSON.stringify(merged);
+  if(!additions.length&&!changedFinance){uiToast('Nenhum dado novo para mesclar.');return}
+  const all=new Map([...state.entries,...state.deletedEntries].map(e=>[e.id,e]));
+  for(const e of additions)all.set(e.id,e);
+  validateFinancialReferences([...all.values()],merged);
+  if(!confirm(`Importar ${review.newEntries.length} novo(s) lançamento(s), escolher ${chosen.length} conflito(s) e ${changedFinance?'mesclar contas/cartões':'manter os dados de contas'}?`))return;
+  await importBatch(additions,nextSettings,'merge-reviewed');
+  uiToast('Histórico e dados financeiros mesclados com sucesso.');
  }else throw Error('Modo de importação inválido.');
- state.importBuffer=null;state.importReview=null;state.pending=null;
+ state.importBuffer=null;state.importReview=null;state.importFinanceReview=null;state.pending=null;
  await reload();closeOverlay();state.page='dashboard';render();
 }
 function backupPayload(){return {app:'meu-fluxo',schemaVersion:2,exportedAt:new Date().toISOString(),version:VERSION,profile:{kind:activeProfile.kind,id:activeProfile.id,email:activeProfile.email||null},transactions:ordered([...state.entries,...state.deletedEntries]),settings:state.settings}}
