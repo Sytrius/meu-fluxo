@@ -3,7 +3,7 @@ const {webcrypto}=require('node:crypto');
 const source=fs.readFileSync(__dirname+'/../app.js','utf8').replace(/\ninit\(\);\s*$/,'\n');
 const data=new Map();
 const ctx={console,crypto:webcrypto,atob,btoa,TextEncoder,TextDecoder,Uint8Array,Date,Intl,URL,Blob,File:class File {},setTimeout:()=>0,Math,JSON,Array,Map,Set,Promise,String,Number,Boolean,localStorage:{getItem:x=>data.get(x)||null,setItem:(x,v)=>data.set(x,v)},document:{addEventListener:()=>{},querySelector:()=>null,querySelectorAll:()=>[]}};
-ctx.globalThis=ctx;vm.createContext(ctx);
+ctx.globalThis=ctx;ctx.MeuFluxoFinance=require('../finance-v13.js');vm.createContext(ctx);
 vm.runInContext(source+`\nglobalThis.sec={encryptBackup,decryptBackup,switchProfile,openDB,saveTransaction,readData,state,ACTIVE_LOCAL};`,ctx);
 (async()=>{
 const p={app:'meu-fluxo',schemaVersion:1,transactions:[{cents:12345}],settings:{}};
