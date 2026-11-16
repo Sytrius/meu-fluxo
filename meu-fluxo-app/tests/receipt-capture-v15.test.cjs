@@ -16,6 +16,7 @@ const doc={documentElement:{dataset:{}},addEventListener(){},querySelector(q){
 const ctx={console,Math,Date,Intl,Number,String,Boolean,Array,Object,JSON,Map,Set,Promise,URL,Blob,crypto:webcrypto,TextEncoder,TextDecoder,Uint8Array,document:doc,location:{href:'https://sytrius.github.io/meu-fluxo/'},navigator:{onLine:true},setTimeout(){},confirm:()=>true};
 ctx.globalThis=ctx;ctx.MeuFluxoFinance=F;ctx.MeuFluxoBackups=B;ctx.MeuFluxoChatParser=C;ctx.MeuFluxoReceipts=R;ctx.MeuFluxoReceiptMulti=P;ctx.localStorage={getItem(){return null},setItem(){}};
 vm.createContext(ctx);
+vm.runInContext(read('finance-ui-v13.js'),ctx);
 vm.runInContext(read('app.js').replace(/\ninit\(\);\s*$/,'\n')+'\nuiToast=()=>{};globalThis.appTest={state,collectEntry,validateImported};',ctx);
 vm.runInContext(read('receipt-capture-v15.js'),ctx);
 const image1='data:image/jpeg;base64,QUJD',image2='data:image/jpeg;base64,REVG';
