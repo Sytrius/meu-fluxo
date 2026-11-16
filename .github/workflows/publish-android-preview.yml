@@ -1,0 +1,41 @@
+name: Publicar APK de testes Meu Fluxo
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/publish-android-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar APK já compilado e testado
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43825289093
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          name: MeuFluxo-Android-Preview
+          path: release
+      - name: Verificar artefato
+        run: |
+          test -s release/MeuFluxo-Android-Preview.apk
+          cd release
+          sha256sum -c SHA256.txt
+      - name: Publicar instalador direto no GitHub Releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create android-preview-0.1.0 \
+            release/MeuFluxo-Android-Preview.apk \
+            release/SHA256.txt \
+            --repo "${{ github.repository }}" \
+            --target main \
+            --title "Meu Fluxo Android — primeiro APK de testes" \
+            --prerelease \
+            --notes "Versão experimental Android com Capacitor e ML Kit. APK assinado com chave de testes efêmera; futuras versões podem exigir desinstalação (exporte o backup primeiro). A interface e banco offline foram migrados, mas login Google e câmera ainda dependem de teste em dispositivo Android. NÃO é versão para produção ou Play Store."
