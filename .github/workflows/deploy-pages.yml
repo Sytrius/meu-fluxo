@@ -50,6 +50,8 @@ jobs:
           node --check meu-fluxo-app/finance-ui-v13.js
           node --check meu-fluxo-app/receipts-v14.js
           node --check meu-fluxo-app/receipts-ui-v14.js
+          node --check meu-fluxo-app/receipt-multipage-v15.js
+          node --check meu-fluxo-app/receipt-capture-v15.js
           node --test meu-fluxo-app/tests/*.cjs
       - name: Configurar Pages
         uses: actions/configure-pages@v5
