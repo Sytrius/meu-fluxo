@@ -27,6 +27,12 @@ function showQr(raw){
  if(area)area.textContent='Não foi identificado endereço da NFC-e de Pernambuco. Cole o link oficial do QR ou use a leitura local.';return false;
 }
 async function scanQR(){
+ if(root.MeuFluxoNative?.available){
+  const raw=await root.MeuFluxoNative.scanQR();
+  if(!raw)throw Error('Leitura do QR Code cancelada ou sem resultado.');
+  const field=$('#hybrid-qr-input');if(field)field.value=raw;
+  showQr(raw);return;
+ }
  const photos=root.MeuFluxoReceiptCapture?.getPhotos?.()||[];
  if(!photos.length)throw Error('Adicione uma foto do QR Code da nota.');
  if(typeof root.BarcodeDetector!=='function')throw Error('Este navegador não oferece leitura de QR Code. Leia o QR pela câmera do celular e cole o link aqui.');
