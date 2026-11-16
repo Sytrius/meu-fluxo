@@ -64,23 +64,47 @@ const instruction=[
  'Data YYYY-MM-DD, ou string vazia se ilegível. Unidades admitidas: un, kg, g, l, ml.',
  'Retorne somente JSON conforme o esquema, com TODOS os itens legíveis das fotos. O usuário revisará tudo.'
 ].join('\n');
-async function analyze(photos){
+const photoInstruction=instruction+'\nATENÇÃO: ESTA REQUISIÇÃO CONTÉM APENAS UMA FOTO de uma nota que pode ter várias páginas. Extraia SOMENTE os itens visíveis nesta imagem. Não reconstrua itens de outras fotos. Se cabeçalho, contagem ou total não aparecerem, use string vazia ou 0 para esses campos. Linhas parciais devem ser sinalizadas como desconhecidas, nunca estimadas.';
+function transientError(error){
+ const message=String(error?.message||error||'');
+ return /\b503\b|\b504\b|deadline expired|service unavailable|unavailable|deadline_exceeded/i.test(message);
+}
+function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
+async function generateOne(model,part,index,progress){
+ for(let attempt=0;attempt<2;attempt++){
+  if(progress)progress({index,retrying:attempt>0});
+  try{
+   const result=await model.generateContent([photoInstruction,part]);
+   const reply=result?.response?.text?.();
+   if(typeof reply!=='string'||reply.length>120000)throw Error('Resposta inválida ou muito extensa do Gemini.');
+   try{return JSON.parse(reply)}
+   catch{throw Error('O Gemini não retornou um JSON válido. Tente novamente mais tarde.')}
+  }catch(error){
+   if(attempt===0&&transientError(error)){await sleep(1800);continue}
+   if(transientError(error))throw Error('O Gemini excedeu o prazo ao analisar a foto '+(index+1)+'. O serviço pode estar sobrecarregado. Tente novamente mais tarde ou use OCR local.');
+   throw error;
+  }
+ }
+}
+async function analyze(photos,progress){
  if(!Array.isArray(photos)||photos.length<1||photos.length>8)throw Error('Escolha de 1 a 8 fotos.');
  const parts=photos.map(uri=>{
   const m=/^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/=]+)$/.exec(uri||'');
   if(!m)throw Error('Uma foto possui formato inválido.');
-  // Firebase Web SDK 11.10.0 forwards Part fields to the API: no `type` discriminator.
   return {inlineData:{mimeType:'image/'+m[1],data:m[2]}};
  });
  const bytes=parts.reduce((n,x)=>n+x.inlineData.data.length,0);
  if(bytes>12*1024*1024)throw Error('Imagens muito grandes para análise online. Tente menos fotos ou reduza os arquivos.');
  const {model}=await client();
- const result=await model.generateContent([instruction,...parts]);
- const reply=result?.response?.text?.();
- if(typeof reply!=='string'||reply.length>120000)throw Error('A IA não retornou uma resposta válida.');
- let parsed;
- try{parsed=JSON.parse(reply)}catch{throw Error('A resposta da IA não é JSON válido. Tente novamente.')}
- return root.MeuFluxoReceiptHybrid.validateReceipt(parsed);
+ const pages=[];
+ // Uma foto por requisição: evita que notas longas excedam o tempo limite
+ // do backend. Processamento sequencial respeita melhor cotas gratuitas.
+ for(let i=0;i<parts.length;i++){
+  pages.push(await generateOne(model,parts[i],i,progress));
+ }
+ const merged=root.MeuFluxoReceiptHybrid.mergeAIPhotoResults(pages);
+ return merged;
 }
+
 root.MeuFluxoReceiptAI={configured,analyze,siteKey,configurePublicSiteKey};
 })(typeof globalThis!=='undefined'?globalThis:this);
