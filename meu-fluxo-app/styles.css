@@ -104,3 +104,17 @@
 .receipt-ocr-warning ul{margin:6px 0 0;padding-left:20px}
 .receipt-ocr-line small{font-size:10px;color:var(--muted)}
 @media(max-width:600px){.receipt-photo-gallery{max-height:270px}.receipt-photo{min-width:87px;padding:5px}.receipt-photo img{width:90px;height:124px}.receipt-photo-inputs label{width:100%;justify-content:center}.receipt-ocr-line{align-items:flex-start;gap:6px}.receipt-ocr-line strong{white-space:nowrap}}
+
+/* v1.5 — seleção da origem da leitura fiscal */
+.hybrid-receipt{border:1px solid var(--line);border-radius:14px;padding:14px;min-width:0;background:var(--panel-2)}
+.hybrid-receipt .panel-title{font-size:16px;margin-bottom:8px}
+.hybrid-choice{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:12px;margin-top:10px}
+.hybrid-choice>div{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;min-width:0;display:flex;flex-direction:column;align-items:start;gap:9px}
+.hybrid-choice strong{font-size:13px}
+.hybrid-choice p{margin:0;line-height:1.55}
+.hybrid-choice .btn{white-space:normal}
+.hybrid-actions{display:flex;flex-wrap:wrap;gap:8px;width:100%}
+.hybrid-actions .input{width:100%;min-width:0;font-size:12px}
+#hybrid-ai-status,#hybrid-qr-result{font-size:12px;overflow-wrap:anywhere;line-height:1.55}
+#hybrid-qr-result a{color:var(--brand-dark);font-weight:700;text-decoration:underline}
+@media(max-width:650px){.hybrid-choice{grid-template-columns:1fr}.hybrid-choice>div{padding:12px}}
