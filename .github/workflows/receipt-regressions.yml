@@ -1,0 +1,16 @@
+name: Regressões de notas fiscais (não mede precisão das fotos)
+on:
+  pull_request:
+    paths:
+      - 'meu-fluxo-app/**'
+      - 'scripts/**'
+      - '.github/workflows/receipt-regressions.yml'
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: node --test meu-fluxo-app/tests/*.cjs

@@ -1,0 +1,12 @@
+{
+  "private": true,
+  "scripts": {
+    "test": "node --test meu-fluxo-app/tests/*.cjs",
+    "test:receipt-real": "node scripts/validate-real-receipt.cjs"
+  },
+  "devDependencies": {
+    "@tesseract.js-data/por": "1.0.0",
+    "playwright-core": "1.65.1",
+    "tesseract.js": "7.0.0"
+  }
+}

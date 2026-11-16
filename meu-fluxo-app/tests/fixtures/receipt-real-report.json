@@ -1,0 +1,20 @@
+{
+  "sourceSha256": [
+    "e19b105110ba34c52f19555d217b684149d5a63233c9f2f5168810c005f8e0c5",
+    "35c4737d9814909fba0874965c6d260020349ed34b7e8d14825ec597b5972b16"
+  ],
+  "engine": "tesseract.js 7.0.0 / por 4.0.0_best_int",
+  "productionCapture": true,
+  "expected": 27,
+  "recognized": 15,
+  "exactFinancialItems": 0,
+  "total": null,
+  "sum": 68192,
+  "balanced": false,
+  "issues": [
+    "Desconto ou valor líquido divergente no item 126.",
+    "4 item(ns) identificado(s) sem valor líquido confiável."
+  ],
+  "pass": false,
+  "note": "Exact financial fields only; product descriptions still require manual review."
+}
