@@ -14,6 +14,7 @@ import { BarcodeScanner, BarcodeFormat } from '@capacitor-mlkit/barcode-scanning
 const available = Capacitor.isNativePlatform() && Capacitor.getPlatform()==='android';
 // This bridge is Android-only; do not bundle the plugin's Firebase Web adapter.
 const FirebaseAuthentication = registerPlugin('FirebaseAuthentication');
+const appCheck = registerPlugin('ReceiptAppCheck');
 async function recognizePhoto(dataUrl, qr = false) {
   if (!available) throw new Error('OCR nativo exige Android.');
   const match = /^data:image\/(jpeg|png|webp);base64,([\s\S]+)$/.exec(dataUrl);
@@ -91,4 +92,4 @@ if (available) {
     }
   }).catch(()=>{});
 }
-globalThis.MeuFluxoNative={available,scanReceipt,scanQR,recognizePhoto,googleAuth,capturePhoto,readPhotoQR:uri=>recognizePhoto(uri,true)};
+globalThis.MeuFluxoNative={available,scanReceipt,scanQR,recognizePhoto,googleAuth,capturePhoto,readPhotoQR:uri=>recognizePhoto(uri,true),appCheck};

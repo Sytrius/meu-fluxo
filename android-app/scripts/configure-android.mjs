@@ -19,6 +19,13 @@ text=text.replace('ext {',"ext {\n    rgcfaIncludeGoogle = true\n    androidxCre
 await fs.writeFile(variables,text);
 const gradle=new URL('app/build.gradle',root);
 text=await fs.readFile(gradle,'utf8');
-text=text.replace('versionCode 1','versionCode 3').replace('versionName "1.0"','versionName "0.3.0"');
+text=text.replace('versionCode 1','versionCode 4').replace('versionName "1.0"','versionName "0.4.0"');
 text+='\nandroid { signingConfigs { debug { storeFile file("../../preview.keystore"); storePassword "android"; keyAlias "androiddebugkey"; keyPassword "android" } } }\n';
 await fs.writeFile(gradle,text);
+
+const javaDir=new URL('app/src/main/java/io/github/sytrius/meufluxo/',root);
+await fs.mkdir(javaDir,{recursive:true});
+await fs.copyFile(new URL('src/ReceiptAppCheckPlugin.java',base),new URL('ReceiptAppCheckPlugin.java',javaDir));
+const activity=new URL('MainActivity.java',javaDir);
+await fs.writeFile(activity, 'package io.github.sytrius.meufluxo;\nimport android.os.Bundle;\nimport com.getcapacitor.BridgeActivity;\npublic class MainActivity extends BridgeActivity { @Override public void onCreate(Bundle savedInstanceState) { registerPlugin(ReceiptAppCheckPlugin.class); super.onCreate(savedInstanceState); } }\n');
+await fs.appendFile(gradle, '\ndependencies { implementation "com.google.firebase:firebase-appcheck-playintegrity:19.0.1" }\n');

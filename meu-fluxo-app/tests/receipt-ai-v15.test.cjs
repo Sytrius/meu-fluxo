@@ -4,13 +4,13 @@ require('../receipt-ai-v15.js');
 const ai=globalThis.MeuFluxoReceiptAI;
 const fs=require('node:fs'),vm=require('node:vm');
 // Replace only the remote module loader; exercise the real client and analyze path.
-function harness(){
+function harness(native=false,fail=false){
  const calls=[],imports=[],writes=[];
  const receipt={merchant:'Loja',date:'2026-11-16',itemCount:0,totalCents:0,items:[]};
  const schema={object:x=>x,string:()=>({}),number:()=>({}),array:x=>x};
  const modules={
-  'firebase-app.js':{getApps:()=>[],initializeApp:()=>({})},
-  'firebase-app-check.js':{initializeAppCheck:()=>{},ReCaptchaEnterpriseProvider:class{}},
+  'firebase-app.js':{getApps:()=>[],initializeApp:config=>{writes.push(config);return {}}},
+  'firebase-app-check.js':{initializeAppCheck:()=>{},getAppCheck:()=>({}),getToken:async()=>{if(fail)throw Error('App Check inválido')},CustomProvider:class{},ReCaptchaEnterpriseProvider:class{}},
   'firebase-ai.js':{Schema:schema,GoogleAIBackend:class{},getAI:()=>({}),getGenerativeModel:(_ai,config)=>{
    calls.push({config});
    return {generateContent:async parts=>{
@@ -20,6 +20,7 @@ function harness(){
   }}
  };
  const context=vm.createContext({
+  MeuFluxoNative:native?{available:true,appCheck:{getOptions:async()=>({appId:'android-id',apiKey:'public',projectId:'test'}),getToken:async()=>({token:'native',expireTimeMillis:Date.now()+60000})}}:undefined,
   navigator:{onLine:true},MEU_FLUXO_FIREBASE_CONFIG:{apiKey:'public',projectId:'test'},
   MEU_FLUXO_APPCHECK_SITE_KEY:'public-site-key-for-tests',
   localStorage:{getItem:()=>null,setItem:(...x)=>writes.push(x),removeItem:(...x)=>writes.push(x)},
@@ -46,7 +47,7 @@ for(const count of [2,3,8])test(`Gemini envia ${count} fotos sem campos desconhe
  assert.equal(h.imports.length,3);
  assert.ok(h.imports.every(url=>url.startsWith('https://www.gstatic.com/firebasejs/11.10.0/')));
  assert.equal(result.merchant,'Loja');
- assert.deepEqual(h.writes,[]);
+ assert.equal(h.writes.length,1);
 });
 test('lote com foto inválida e lote grande não carregam SDK nem enviam fotos',async()=>{
  const h=harness();
@@ -64,4 +65,9 @@ test('foto inválida ou lote excessivo falha antes de qualquer chamada online',a
  await assert.rejects(()=>ai.analyze([]),/1 a 8/);
  await assert.rejects(()=>ai.analyze(['https://evil.example/image.jpg']),/formato inválido/);
  await assert.rejects(()=>ai.analyze(Array(9).fill('data:image/jpeg;base64,QUJD')),/1 a 8/);
+});
+
+test('Android usa appId nativo; App Check inválido impede envio de fotos',async()=>{
+ const h=harness(true);await h.ai.analyze(['data:image/jpeg;base64,QUJD']);assert.equal(h.writes[0].appId,'android-id');
+ const blocked=harness(true,true);await assert.rejects(blocked.ai.analyze(['data:image/jpeg;base64,QUJD']),/App Check inválido/);assert.equal(blocked.calls.filter(x=>x.parts).length,0);
 });

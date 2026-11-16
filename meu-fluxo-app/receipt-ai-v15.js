@@ -12,7 +12,7 @@ function siteKey(){
 }
 function configured(){
  const cfg=root.MEU_FLUXO_FIREBASE_CONFIG,key=siteKey();
- return !!(cfg?.apiKey&&cfg?.projectId&&key.length>10);
+ return root.MeuFluxoNative?.available?!!root.MeuFluxoNative.appCheck:!!(cfg?.apiKey&&cfg?.projectId&&key.length>10);
 }
 function configurePublicSiteKey(value){
  const key=String(value||'').trim();
@@ -30,11 +30,13 @@ async function client(){
    import(sdk+'firebase-app.js'),import(sdk+'firebase-app-check.js'),import(sdk+'firebase-ai.js')
   ]);
   let app=appmod.getApps().find(x=>x.name==='meu-fluxo-receipt-ai');
-  if(!app)app=appmod.initializeApp(root.MEU_FLUXO_FIREBASE_CONFIG,'meu-fluxo-receipt-ai');
+  if(!app)app=appmod.initializeApp(root.MeuFluxoNative?.available?await root.MeuFluxoNative.appCheck.getOptions():root.MEU_FLUXO_FIREBASE_CONFIG,'meu-fluxo-receipt-ai');
   check.initializeAppCheck(app,{
-   provider:new check.ReCaptchaEnterpriseProvider(siteKey()),
+   provider:root.MeuFluxoNative?.available?new check.CustomProvider({getToken:()=>root.MeuFluxoNative.appCheck.getToken()}):new check.ReCaptchaEnterpriseProvider(siteKey()),
    isTokenAutoRefreshEnabled:true
   });
+  // Validate attestation before any receipt photos are sent; never continue with a placeholder token.
+  await check.getToken(check.getAppCheck(app));
   const ai=aimod.getAI(app,{backend:new aimod.GoogleAIBackend()});
   const S=aimod.Schema;
   const schema=S.object({properties:{
