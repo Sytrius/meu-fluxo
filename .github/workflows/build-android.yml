@@ -2,8 +2,9 @@ name: Meu Fluxo Android - gerar APK
 
 on:
   workflow_dispatch:
+  pull_request:
   push:
-    branches: [main]
+    branches: [main, fix/android-auth-ocr]
     paths:
       - 'android-app/**'
       - 'meu-fluxo-app/**'
@@ -43,7 +44,8 @@ jobs:
 
       - name: Instalar dependências Android e ML Kit
         run: |
-          npm install --prefix android-app --no-audit --no-fund
+          npm ci --prefix android-app --no-audit --no-fund
+          node --test android-app/tests/*.mjs
           node --check android-app/src/native.mjs
           node --check android-app/scripts/prepare-web.mjs
 
@@ -71,6 +73,16 @@ jobs:
           npx cap sync android
       - name: Aplicar privacidade e permissões
         run: node android-app/scripts/patch-android.mjs
+      - name: Configurar autenticação e assinatura Android
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON" > android-app/google-services.json
+            node android-app/scripts/configure-android.mjs
+          else
+            ANDROID_COMPILE_ONLY=true node android-app/scripts/configure-android.mjs
+          fi
       - name: Aplicar logo Meu Fluxo
         run: |
           python -m pip install --quiet Pillow
@@ -93,12 +105,20 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon --stacktrace
           test -s app/build/outputs/apk/debug/app-debug.apk
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs app/build/outputs/apk/debug/app-debug.apk
 
       - name: Preparar instalador de testes
         run: |
           mkdir -p android-app/dist
           cp android-app/android/app/build/outputs/apk/debug/app-debug.apk android-app/dist/MeuFluxo-Android-Preview.apk
           sha256sum android-app/dist/MeuFluxo-Android-Preview.apk > android-app/dist/SHA256.txt
+          cp android-app/README.md android-app/dist/LEIA-ME.md
+          printf '%s\n' "Commit: $GITHUB_SHA" "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" > android-app/dist/BUILD.txt
+          if [ -s android-app/android/app/google-services.json ]; then
+            echo 'Firebase Android: configured' >> android-app/dist/BUILD.txt
+          else
+            echo 'COMPILE ONLY - DO NOT INSTALL - Firebase Android missing' >> android-app/dist/BUILD.txt
+          fi
       - name: Disponibilizar APK
         uses: actions/upload-artifact@v4
         with:
@@ -106,5 +126,7 @@ jobs:
           path: |
             android-app/dist/MeuFluxo-Android-Preview.apk
             android-app/dist/SHA256.txt
+            android-app/dist/BUILD.txt
+            android-app/dist/LEIA-ME.md
           retention-days: 30
           if-no-files-found: error

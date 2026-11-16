@@ -84,27 +84,44 @@ async function enhance(uri){
  ctx.putImageData(data,0,0);return c.toDataURL('image/jpeg',.87);
 }
 function score(text){const p=P().parsePhoto(text);return p.items.length*4+p.items.filter(i=>i.netPrinted).length*3-p.pending.length*2-p.errors.length*2}
+function bounded(task,ms){
+ let timer;return Promise.race([task,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Tempo limite de leitura excedido. Suas fotos foram mantidas.')),ms)})]).finally(()=>clearTimeout(timer));
+}
 async function scan(){
  if(loading)return;
  if(!photos.length)throw Error('Adicione uma ou mais fotografias da nota.');
  if(!P())throw Error('Leitor multipágina indisponível. Atualize o aplicativo.');
- const token=++runId;loading=true;draft=null;state.receiptOCRUsed=false;
+ const token=++runId;loading=true;state.receiptOCRUsed=false;
  const btn=$('[data-action="receipt-multi-scan"]');if(btn)btn.disabled=true;
  let worker;
  try{
+  if(root.MeuFluxoNative?.available){
+   const readings=[],snapshot=photos.slice();
+   for(let i=0;i<snapshot.length;i++){
+    if(token!==runId)return;
+    status('ML Kit: lendo foto '+(i+1)+' de '+snapshot.length+'...');
+    readings.push(await bounded(root.MeuFluxoNative.recognizePhoto(snapshot[i]),50000));
+   }
+   if(token!==runId||!$('#entry-form'))return;
+   draft=P().combine(readings);renderDraft();
+   status('Leitura concluída com ML Kit. Confira os itens. Nenhuma transação foi salva.');return;
+  }
   status('Preparando o OCR em português...');
-  const tess=await script(),base=new URL('./vendor/ocr/',root.location.href).href;
-  worker=await tess.createWorker('por',1,{workerPath:base+'worker.min.js',corePath:base+'core',langPath:base+'lang',workerBlobURL:false,logger:m=>{if(m?.status==='recognizing text')status('Lendo foto, '+Math.round((m.progress||0)*100)+'%...')}});
+  const tess=await bounded(script(),15000),base=new URL('./vendor/ocr/',root.location.href).href;
+  const creation=tess.createWorker('por',1,{workerPath:base+'worker.min.js',corePath:base+'core',langPath:base+'lang',workerBlobURL:false,logger:m=>{if(token===runId&&m?.status==='recognizing text')status('Lendo foto, '+Math.round((m.progress||0)*100)+'%...')}});
+  let expired=false;
+  creation.then(w=>{if(expired)w.terminate().catch(()=>{})},()=>{});
+  try{worker=await bounded(creation,30000)}catch(error){expired=true;throw error}
   const readings=[];
   for(let i=0;i<photos.length;i++){
    if(token!==runId)return;
    status('Reconhecendo foto '+(i+1)+' de '+photos.length+'. Não feche a tela.');
-   const first=await worker.recognize(photos[i]);let best=String(first?.data?.text||'').slice(0,30000);
+   const first=await bounded(worker.recognize(photos[i]),45000);let best=String(first?.data?.text||'').slice(0,30000);
    if(P().parsePhoto(best).items.length<3||P().parsePhoto(best).pending.length>1){
     try{
      status('Tentando reforçar contraste da foto '+(i+1)+'...');
-     const enhanced=await enhance(photos[i]);
-     if(enhanced!==photos[i]){const second=await worker.recognize(enhanced),text=String(second?.data?.text||'').slice(0,30000);if(score(text)>score(best))best=text}
+     const enhanced=await bounded(enhance(photos[i]),10000);
+     if(enhanced!==photos[i]){const second=await bounded(worker.recognize(enhanced),45000),text=String(second?.data?.text||'').slice(0,30000);if(score(text)>score(best))best=text}
     }catch(error){console.warn('Realce de imagem não aplicado',error)}
    }
    readings.push(best);
@@ -113,7 +130,7 @@ async function scan(){
   draft=P().combine(readings);renderDraft();
   status('Leitura concluída. Confira itens reconhecidos e avisos. Nenhuma transação foi salva.');
  }catch(e){status('Falha de leitura: '+(e?.message||String(e))+'. Faça fotos mais próximas ou preencha manualmente.');throw e}
- finally{if(worker)try{await worker.terminate()}catch(error){console.warn(error)}loading=false;if(btn)btn.disabled=false}
+ finally{if(worker)Promise.resolve(worker.terminate()).catch(error=>console.warn(error));loading=false;if(btn)btn.disabled=false}
 }
 function renderDraft(){
  const host=$('#receipt-ocr-review');if(!host||!draft)return;

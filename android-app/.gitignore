@@ -3,3 +3,4 @@ www/
 android/
 dist/
 .gradle/
+google-services.json

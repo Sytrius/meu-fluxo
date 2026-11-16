@@ -2,14 +2,45 @@
  * Meu Fluxo para Android: ponte local Capacitor ↔ ML Kit.
  * Nenhuma fotografia sai do dispositivo por este módulo.
  */
-import { Capacitor } from '@capacitor/core';
-import { Filesystem } from '@capacitor/filesystem';
+import { Capacitor, registerPlugin } from '@capacitor/core';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { deadline } from './deadline.mjs';
 import { App } from '@capacitor/app';
 import { DocumentScanner } from '@capacitor-mlkit/document-scanner';
 import { TextRecognition, Script } from '@capacitor-mlkit/text-recognition';
 import { BarcodeScanner, BarcodeFormat } from '@capacitor-mlkit/barcode-scanning';
 
 const available = Capacitor.isNativePlatform() && Capacitor.getPlatform()==='android';
+// This bridge is Android-only; do not bundle the plugin's Firebase Web adapter.
+const FirebaseAuthentication = registerPlugin('FirebaseAuthentication');
+async function recognizePhoto(dataUrl) {
+  if (!available) throw new Error('OCR nativo exige Android.');
+  const match = /^data:image\/(jpeg|png|webp);base64,([\s\S]+)$/.exec(dataUrl);
+  if (!match) throw new Error('Fotografia anexada inválida.');
+  const path = `ocr-${crypto.randomUUID()}.${match[1] === 'jpeg' ? 'jpg' : match[1]}`;
+  // Only a temporary copy is deleted. Never delete the attached original.
+  const task = (async () => {
+    try {
+      const file = await Filesystem.writeFile({path, directory: Directory.Cache, data: match[2]});
+      const result = await TextRecognition.processImage({path: file.uri, script: Script.Latin});
+      return String(result.text || '').slice(0, 30000);
+    } finally {
+      await Filesystem.deleteFile({path, directory: Directory.Cache}).catch(() => {});
+    }
+  })();
+  return deadline(task, 45000, 'A leitura excedeu 45 segundos. Suas fotos foram mantidas; tente novamente.');
+}
+const googleAuth = {
+  async signIn() {
+    try {
+      return await FirebaseAuthentication.signInWithGoogle();
+    } catch (error) {
+      throw new Error('Não foi possível entrar com Google. Confira internet, Google Play Services e a configuração Android/SHA no Firebase. ' + (error.message || error));
+    }
+  },
+  getCurrentUser: () => FirebaseAuthentication.getCurrentUser(),
+  signOut: () => FirebaseAuthentication.signOut()
+};
 const asUri = item => typeof item === 'string' ? item : (item?.uri || item?.path || item?.filePath || '');
 async function readPhotoAsDataURL(uri) {
   if (!uri) throw new Error('O scanner não retornou o arquivo de imagem.');
@@ -53,4 +84,4 @@ if (available) {
     }
   }).catch(()=>{});
 }
-globalThis.MeuFluxoNative={available,scanReceipt,scanQR};
+globalThis.MeuFluxoNative={available,scanReceipt,scanQR,recognizePhoto,googleAuth};

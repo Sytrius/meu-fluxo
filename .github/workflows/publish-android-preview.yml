@@ -1,41 +1,38 @@
 name: Publicar APK de testes Meu Fluxo
-
 on:
-  push:
+  workflow_run:
+    workflows: ['Meu Fluxo Android - gerar APK']
+    types: [completed]
     branches: [main]
-    paths:
-      - '.github/workflows/publish-android-preview.yml'
-  workflow_dispatch:
-
 permissions:
   contents: write
   actions: read
-
 jobs:
   preview:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event != 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - name: Baixar APK já compilado e testado
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
-          run-id: 43825289093
+          run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           name: MeuFluxo-Android-Preview
           path: release
-      - name: Verificar artefato
+      - name: Verificar checksum, configuração e commit
+        env:
+          BUILD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          test -s release/MeuFluxo-Android-Preview.apk
           cd release
           sed 's#android-app/dist/##' SHA256.txt | sha256sum -c -
-      - name: Publicar instalador direto no GitHub Releases
+          grep -Fx "Commit: $BUILD_SHA" BUILD.txt
+          grep -Fx 'Firebase Android: configured' BUILD.txt || { echo 'Publicação bloqueada: configure GOOGLE_SERVICES_JSON; compilação não comprova login.'; exit 1; }
+      - name: Publicar APK verificável
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BUILD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          gh release create android-preview-0.1.0 \
-            release/MeuFluxo-Android-Preview.apk \
-            release/SHA256.txt \
-            --repo "${{ github.repository }}" \
-            --target main \
-            --title "Meu Fluxo Android — primeiro APK de testes" \
-            --prerelease \
-            --notes "Versão experimental Android com Capacitor e ML Kit. APK assinado com chave de testes efêmera; futuras versões podem exigir desinstalação (exporte o backup primeiro). A interface e banco offline foram migrados, mas login Google e câmera ainda dependem de teste em dispositivo Android. NÃO é versão para produção ou Play Store."
+          gh release create "android-preview-0.2-${BUILD_SHA:0:8}" \
+            release/MeuFluxo-Android-Preview.apk release/SHA256.txt release/BUILD.txt release/LEIA-ME.md \
+            --repo "$GITHUB_REPOSITORY" --target "$BUILD_SHA" --prerelease \
+            --title 'Meu Fluxo Android 0.2 — preview com login nativo e OCR' \
+            --notes 'Compilação Gradle e testes automatizados aprovados. Fotos anexadas usam ML Kit; login usa Firebase Auth Android. Ainda exige teste funcional em aparelho real: login, retorno, persistência e OCR. Leia LEIA-ME.md. Exporte backup antes de atualizar: assinatura do primeiro preview 0.1 era efêmera. Não é versão de produção.'

@@ -14,6 +14,7 @@ const doc={documentElement:{dataset:{}},addEventListener(){},querySelector(q){
  return ui.get(q.charAt(0)==='#'?q.slice(1):'not-found')||null;
 },querySelectorAll(){return []}};
 const ctx={console,Math,Date,Intl,Number,String,Boolean,Array,Object,JSON,Map,Set,Promise,URL,Blob,crypto:webcrypto,TextEncoder,TextDecoder,Uint8Array,document:doc,location:{href:'https://sytrius.github.io/meu-fluxo/'},navigator:{onLine:true},setTimeout(){},confirm:()=>true};
+ctx.clearTimeout=clearTimeout;ctx.setTimeout=setTimeout;
 ctx.globalThis=ctx;ctx.MeuFluxoFinance=F;ctx.MeuFluxoBackups=B;ctx.MeuFluxoChatParser=C;ctx.MeuFluxoReceipts=R;ctx.MeuFluxoReceiptMulti=P;ctx.localStorage={getItem(){return null},setItem(){}};
 vm.createContext(ctx);
 vm.runInContext(read('finance-ui-v13.js'),ctx);
@@ -50,4 +51,29 @@ test('backup aceita fotos múltiplas e fotografia legada',()=>{
  delete row.receiptPhotos;
  imported=ctx.appTest.validateImported({app:'meu-fluxo',schemaVersion:1,transactions:[row],settings:{}});
  assert.equal(imported.entries[0].receiptPhotos.length,1);
+});
+test('Android lê as fotos já anexadas via ML Kit, sem Tesseract nem gravação',async()=>{
+ const cap=ctx.MeuFluxoReceiptCapture;
+ cap.setUp({receiptPhotos:[image1,image2]});
+ const seen=[];
+ ctx.MeuFluxoNative={available:true,recognizePhoto:async photo=>{seen.push(photo);return seen.length===1?part1:part2}};
+ ctx.Tesseract={createWorker(){throw Error('Android não deve iniciar WASM')}};
+ await cap.scan();
+ assert.deepEqual(seen,[image1,image2]);
+ assert.equal(cap.getDraft().items.length,4);
+ assert.equal(cap.getPhotos().length,2);
+ assert.equal(ctx.appTest.state.entries.length,0);
+ assert.match(ui.get('receipt-ocr-status').textContent,/ML Kit/);
+ assert.equal(ui.get('receipt-multi-scan').disabled,false);
+});
+test('falha nativa conserva fotos e campos e permite tentar novamente',async()=>{
+ const cap=ctx.MeuFluxoReceiptCapture;cap.setUp({receiptPhotos:[image1,image2]});
+ const before=JSON.stringify(ctx.appTest.state.items);
+ ctx.MeuFluxoNative={available:true,recognizePhoto:async()=>{throw Error('Falha simulada')}};
+ await assert.rejects(cap.scan(),/Falha simulada/);
+ assert.equal(cap.getPhotos().length,2);assert.equal(JSON.stringify(ctx.appTest.state.items),before);
+ assert.equal(ui.get('receipt-multi-scan').disabled,false);
+ assert.equal(ctx.appTest.state.entries.length,0);
+ ctx.MeuFluxoNative.recognizePhoto=async()=>part1;
+ await cap.scan();assert.ok(cap.getDraft());
 });
