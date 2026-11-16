@@ -77,3 +77,20 @@ test('falha nativa conserva fotos e campos e permite tentar novamente',async()=>
  ctx.MeuFluxoNative.recognizePhoto=async()=>part1;
  await cap.scan();assert.ok(cap.getDraft());
 });
+test('login Android restaura sessão offline, sai e nunca abre Firebase Web',async()=>{
+ vm.runInContext(`globalThis.authTest={signInGoogle,signOutGoogle,initGoogleSession};
+ globalThis.switched=[];
+ switchProfile=async profile=>{activeProfile=profile;globalThis.switched.push(profile)};
+ saveSelectedProfile=()=>{};render=()=>{};
+ loadFirebaseClient=()=>{throw Error('Android não deve iniciar Firebase Web')};`,ctx);
+ const user={uid:'firebase-uid',email:'teste@example.com',displayName:'Teste',providerData:[{providerId:'google.com'}]};
+ let calls=0,signedOut=0;
+ ctx.MeuFluxoNative={available:true,googleAuth:{signIn:async()=>{calls++;return {user}},getCurrentUser:async()=>({user}),signOut:async()=>{signedOut++}}};
+ await ctx.authTest.signInGoogle();assert.equal(calls,1);assert.equal(ctx.switched.at(-1).id,user.uid);
+ await ctx.authTest.signOutGoogle();assert.equal(signedOut,1);assert.equal(ctx.switched.at(-1).kind,'local');
+ ctx.navigator.onLine=false;await ctx.authTest.initGoogleSession();
+ assert.equal(ctx.switched.at(-1).id,user.uid);
+ const count=ctx.switched.length;
+ ctx.MeuFluxoNative.googleAuth.signIn=async()=>{throw Error('Cancelado')};
+ await assert.rejects(ctx.authTest.signInGoogle(),/Cancelado/);assert.equal(ctx.switched.length,count);
+});

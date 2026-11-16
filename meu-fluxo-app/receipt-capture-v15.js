@@ -91,7 +91,7 @@ async function scan(){
  if(loading)return;
  if(!photos.length)throw Error('Adicione uma ou mais fotografias da nota.');
  if(!P())throw Error('Leitor multipágina indisponível. Atualize o aplicativo.');
- const token=++runId;loading=true;state.receiptOCRUsed=false;
+ const token=++runId;loading=true;
  const btn=$('[data-action="receipt-multi-scan"]');if(btn)btn.disabled=true;
  let worker;
  try{
@@ -165,6 +165,7 @@ function acceptExternalDraft(result,source){
  status('Prévia '+(source||'IA')+' recebida. Confira os valores e clique em Preencher compra para revisão.');
 }
 function canSave(){
+ if(loading)throw Error('Espere a leitura terminar antes de registrar.');
  if(state.receiptOCRUsed&&!$('#receipt-reviewed')?.checked)throw Error('Antes de registrar, marque que conferiu produtos, quantidades, descontos e valores da nota.');
  return true;
 }
