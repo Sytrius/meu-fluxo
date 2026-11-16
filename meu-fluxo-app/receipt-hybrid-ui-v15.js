@@ -44,11 +44,11 @@ async function analyzeAI(){
  if(!photos.length)throw Error('Adicione fotos da nota antes da análise.');
  if(!root.MeuFluxoReceiptAI?.configured?.())throw Error('Firebase AI Logic/App Check ainda não foi habilitado pelo administrador. Use o leitor offline.');
  if(!root.navigator?.onLine)throw Error('A análise com IA exige internet.');
- if(!confirm('AUTORIZAÇÃO PARA ENVIAR FOTOS\n\nAs '+photos.length+' fotos serão enviadas ao Google via Firebase AI Logic/Gemini. Elas podem conter dados fiscais ou pessoais e, no nível gratuito, poderão ser usadas para melhorar serviços. Há limites de uso.\n\nVocê autoriza o envio apenas destas fotos?'))return;
+ if(!confirm('AUTORIZAÇÃO PARA ENVIAR FOTOS\n\nAs '+photos.length+' fotos serão enviadas ao Google via Firebase AI Logic/Gemini. Elas podem conter dados fiscais ou pessoais e, no nível gratuito, poderão ser usadas para melhorar serviços. Há limites de uso. Cada imagem será analisada em uma solicitação separada, com no máximo uma nova tentativa em caso de falha temporária.\n\nVocê autoriza o envio destas fotos?'))return;
  const status=$('#hybrid-ai-status'),button=$('[data-action="hybrid-ai-start"]');
  if(button)button.disabled=true;if(status)status.textContent='Analisando imagens autorizadas, sem alterar seu histórico...';
  try{
-  const result=await root.MeuFluxoReceiptAI.analyze(photos);
+  const result=await root.MeuFluxoReceiptAI.analyze(photos,({index,retrying})=>{if(status)status.textContent='Analisando foto '+(index+1)+' de '+photos.length+(retrying?' — serviço ocupado, tentando mais uma vez...':' — nenhuma despesa foi salva.');});
   if(!$('#entry-form'))return;
   root.MeuFluxoReceiptCapture.acceptExternalDraft(result,'Gemini');
   if(status)status.textContent='Prévia recebida. Revise TODOS os itens e valores antes de salvar.';
