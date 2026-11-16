@@ -8,7 +8,7 @@ function setUp(entry=null){
  state.editingReceiptPhotos=[...photos];state.editingReceipt=photos[0]||null;state.receiptOCRUsed=false;draft=null;runId++;
 }
 function controlHTML(){
- return `<div class="field span-2 receipt-multi-field"><label>Fotos da mesma nota (até 8 partes)</label><p class="help">Fotografe a nota por trechos, de perto e com sobreposição. Todas as imagens serão reunidas em uma única compra, sem despesas duplicadas.</p><div class="receipt-photo-inputs"><label class="btn btn-outline btn-sm" for="entry-receipt">${ico('plus')} Selecionar fotos</label><input type="file" id="entry-receipt" class="receipt-hidden-input" accept="image/jpeg,image/png,image/webp" multiple><label class="btn btn-outline btn-sm" for="entry-receipt-camera">${ico('camera')} Fotografar outro trecho</label><input type="file" id="entry-receipt-camera" class="receipt-hidden-input" accept="image/jpeg,image/png,image/webp" capture="environment"></div><div id="receipt-status" class="receipt-photo-gallery"></div><p class="help">Para notas grandes: 5 a 8 produtos por foto, luz uniforme, papel plano e 20% de sobreposição. Inclua o cabeçalho e o total final.</p><div class="receipt-ocr-actions"><button type="button" class="btn btn-primary btn-sm" data-action="receipt-multi-scan">${ico('scan')} Ler fotos como uma compra</button></div><div id="receipt-ocr-status" class="help" role="status" aria-live="polite"></div><div id="receipt-ocr-review"></div><label id="receipt-review-label" class="receipt-verified" hidden><input type="checkbox" id="receipt-reviewed"> Conferi todos os produtos, preços, descontos e quantidades antes de salvar.</label></div>`;
+ return `<div class="field span-2 receipt-multi-field"><label>Fotos da mesma nota (até 8 partes)</label><p class="help">Fotografe a nota por trechos, de perto e com sobreposição. Todas as imagens serão reunidas em uma única compra, sem despesas duplicadas.</p><div class="receipt-photo-inputs"><label class="btn btn-outline btn-sm" for="entry-receipt">${ico('plus')} Selecionar fotos</label><input type="file" id="entry-receipt" class="receipt-hidden-input" accept="image/jpeg,image/png,image/webp" multiple><label class="btn btn-outline btn-sm" for="entry-receipt-camera">${ico('camera')} Fotografar outro trecho</label><input type="file" id="entry-receipt-camera" class="receipt-hidden-input" accept="image/jpeg,image/png,image/webp" capture="environment"></div><div id="receipt-status" class="receipt-photo-gallery"></div><p class="help">Para notas grandes: 5 a 8 produtos por foto, luz uniforme, papel plano e 20% de sobreposição. Inclua o cabeçalho e o total final.</p><div class="receipt-ocr-actions">${root.MeuFluxoNative?.available?`<button type="button" class="btn btn-primary btn-sm" data-action="receipt-native-scan">${ico('camera')} Digitalizar com ML Kit</button>`:''}<button type="button" class="btn btn-outline btn-sm" data-action="receipt-multi-scan">${ico('scan')} Ler fotos como uma compra</button></div><div id="receipt-ocr-status" class="help" role="status" aria-live="polite"></div><div id="receipt-ocr-review"></div><label id="receipt-review-label" class="receipt-verified" hidden><input type="checkbox" id="receipt-reviewed"> Conferi todos os produtos, preços, descontos e quantidades antes de salvar.</label></div>`;
 }
 function status(msg){const e=$('#receipt-ocr-status');if(e)e.textContent=msg}
 function renderPhotos(){
@@ -151,8 +151,31 @@ function canSave(){
  if(state.receiptOCRUsed&&!$('#receipt-reviewed')?.checked)throw Error('Antes de registrar, marque que conferiu produtos, quantidades, descontos e valores da nota.');
  return true;
 }
+async function nativeScan() {
+ if(!root.MeuFluxoNative?.available)throw Error('Este recurso exige o aplicativo Android.');
+ if(loading)throw Error('Termine a digitalização anterior antes de iniciar outra.');
+ if(photos.length)throw Error('Para evitar misturar notas, remova as fotos já anexadas antes de iniciar uma nova digitalização nativa.');
+ status('Abrindo a câmera do ML Kit para digitalização da nota...');
+ const pages=await root.MeuFluxoNative.scanReceipt();
+ if(!pages.length){status('Digitalização cancelada; nenhum dado foi registrado.');return}
+ const files=[];
+ for(let i=0;i<pages.length;i++){
+  const blob=await (await fetch(pages[i].dataUrl)).blob();
+  files.push(new File([blob],'nota-android-'+(i+1)+'.jpg',{type:'image/jpeg'}));
+ }
+ await addPhotos(files);
+ if(pages.some(p=>p.text?.trim())){
+  const result=root.MeuFluxoReceiptMulti.combine(pages.map(p=>p.text||''));
+  acceptExternalDraft(result,'ML Kit Android');
+  status('ML Kit identificou '+result.items.length+' item(ns). Confira as fotos, valores e avisos antes de registrar.');
+ }else{
+  status('Fotos digitalizadas. O ML Kit não reconheceu texto suficiente; tente o OCR local ou a análise online opcional.');
+ }
+}
+
 async function action(button){
  const a=button.dataset.action;
+ if(a==='receipt-native-scan'){await nativeScan();return true}
  if(a==='receipt-multi-scan'){await scan();return true}
  if(a==='receipt-multi-apply'){apply();return true}
  if(a==='receipt-remove-one'){removePhoto(button.dataset.index);return true}
