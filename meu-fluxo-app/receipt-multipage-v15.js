@@ -113,7 +113,7 @@ function parsePhoto(text,photo=0){
  finish();
  const lower=lines.map(norm);
  const base=old()?.parse?.(text)||{};
- const title=lower.find(x=>/^(?:SUPERMERCADO|MERCADO|ATACAD|MINIMERCADO|COMERCIAL|HIPERMERCADO|PADARIA|DISTRIBUIDORA)/.test(x))||base.merchant||'';
+ const title=lower.find(x=>/^(?:SUPERMERCADO|MERCADO|ATACAD|MINIMERCADO|COMERCIAL|HIPERMERCADO|PADARIA|DISTRIBUIDORA)/.test(x))||'';
  const merchant=title.slice(0,120);
  const date=base.date||null;
  const sum=items.reduce((n,x)=>n+x.cents,0);
