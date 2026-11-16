@@ -51,6 +51,10 @@ jobs:
 
       - name: Criar pacote offline e ponte nativa
         run: node android-app/scripts/prepare-web.mjs
+      - name: Verificar contrato com SDK Firebase real
+        run: |
+          npm install --prefix "$RUNNER_TEMP/firebase-contract" --no-audit --no-fund --ignore-scripts firebase@11.10.0
+          node android-app/scripts/check-firebase-sdk.mjs "$RUNNER_TEMP/firebase-contract"
 
       - name: Empacotar leitor OCR português para uso local
         run: |

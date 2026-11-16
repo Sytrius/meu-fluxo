@@ -10,7 +10,7 @@ function harness(native=false,fail=false){
  const schema={object:x=>x,string:()=>({}),number:()=>({}),array:x=>x};
  const modules={
   'firebase-app.js':{getApps:()=>[],initializeApp:config=>{writes.push(config);return {}}},
-  'firebase-app-check.js':{initializeAppCheck:()=>{},getAppCheck:()=>({}),getToken:async()=>{if(fail)throw Error('App Check inválido')},CustomProvider:class{},ReCaptchaEnterpriseProvider:class{}},
+  'firebase-app-check.js':{initializeAppCheck:(_app,options)=>({marker:'initialized',provider:options.provider}),getToken:async instance=>{assert.equal(instance.marker,'initialized');if(fail)throw Error('App Check inválido');if(native){const token=await instance.provider.getToken();assert.equal(token.token,'native')}},CustomProvider:class{constructor(options){this.getToken=options.getToken}},ReCaptchaEnterpriseProvider:class{}},
   'firebase-ai.js':{Schema:schema,GoogleAIBackend:class{},getAI:()=>({}),getGenerativeModel:(_ai,config)=>{
    calls.push({config});
    return {generateContent:async parts=>{

@@ -2,7 +2,7 @@
    Fotos só são enviadas após consentimento explícito. */
 (function(root){
 'use strict';
-let clientPromise=null;
+let clientPromise=null,appCheckInstance=null;
 const sdk='https://www.gstatic.com/firebasejs/11.10.0/';
 function siteKey(){
  let local='';
@@ -31,12 +31,12 @@ async function client(){
   ]);
   let app=appmod.getApps().find(x=>x.name==='meu-fluxo-receipt-ai');
   if(!app)app=appmod.initializeApp(root.MeuFluxoNative?.available?await root.MeuFluxoNative.appCheck.getOptions():root.MEU_FLUXO_FIREBASE_CONFIG,'meu-fluxo-receipt-ai');
-  check.initializeAppCheck(app,{
+  if(!appCheckInstance)appCheckInstance=check.initializeAppCheck(app,{
    provider:root.MeuFluxoNative?.available?new check.CustomProvider({getToken:()=>root.MeuFluxoNative.appCheck.getToken()}):new check.ReCaptchaEnterpriseProvider(siteKey()),
    isTokenAutoRefreshEnabled:true
   });
   // Validate attestation before any receipt photos are sent; never continue with a placeholder token.
-  await check.getToken(check.getAppCheck(app));
+  await check.getToken(appCheckInstance);
   const ai=aimod.getAI(app,{backend:new aimod.GoogleAIBackend()});
   const S=aimod.Schema;
   const schema=S.object({properties:{
