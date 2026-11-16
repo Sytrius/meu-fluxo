@@ -139,6 +139,14 @@ function apply(){
  status(draft.issues.length?'Corrija ou complete os itens para que a soma confira e marque a confirmação antes de salvar.':'Revise cada produto e marque a confirmação antes de salvar.');
  uiToast('Compra preparada, mas ainda não registrada.');
 }
+function acceptExternalDraft(result,source){
+ if(loading)throw Error('Conclua a leitura local antes de aplicar a IA.');
+ if(!photos.length||!result||!Array.isArray(result.items))throw Error('A prévia de IA é inválida.');
+ draft={...result,pageCount:photos.length,source:source||'IA',raw:result.raw||'Análise visual externa sujeita a revisão.'};
+ state.receiptOCRUsed=false;
+ renderDraft();
+ status('Prévia '+(source||'IA')+' recebida. Confira os valores e clique em Preencher compra para revisão.');
+}
 function canSave(){
  if(state.receiptOCRUsed&&!$('#receipt-reviewed')?.checked)throw Error('Antes de registrar, marque que conferiu produtos, quantidades, descontos e valores da nota.');
  return true;
@@ -151,5 +159,5 @@ async function action(button){
  if(a==='remove-photo'){resetAll();return true}
  return false;
 }
-root.MeuFluxoReceiptCapture={setUp,controlHTML,addPhotos,removePhoto,resetAll,renderPhotos,scan,apply,canSave,action,getPhotos:()=>photos.slice(),getDraft:()=>draft};
+root.MeuFluxoReceiptCapture={setUp,controlHTML,addPhotos,removePhoto,resetAll,renderPhotos,scan,apply,acceptExternalDraft,canSave,action,getPhotos:()=>photos.slice(),getDraft:()=>draft};
 })(typeof globalThis!=='undefined'?globalThis:this);
