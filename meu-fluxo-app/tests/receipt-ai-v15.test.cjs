@@ -23,7 +23,7 @@ function harness(){
   navigator:{onLine:true},MEU_FLUXO_FIREBASE_CONFIG:{apiKey:'public',projectId:'test'},
   MEU_FLUXO_APPCHECK_SITE_KEY:'public-site-key-for-tests',
   localStorage:{getItem:()=>null,setItem:(...x)=>writes.push(x),removeItem:(...x)=>writes.push(x)},
-  MeuFluxoReceiptHybrid:{validateReceipt:globalThis.MeuFluxoReceiptHybrid.validateReceipt},
+  MeuFluxoReceiptHybrid:{validateReceipt:globalThis.MeuFluxoReceiptHybrid.validateReceipt,mergeAIPhotoResults:globalThis.MeuFluxoReceiptHybrid.mergeAIPhotoResults},
   loadSDK:async url=>{imports.push(url);return modules[url.split('/').pop()]}
  });
  const source=fs.readFileSync(require.resolve('../receipt-ai-v15.js'),'utf8');
@@ -34,10 +34,14 @@ for(const count of [2,3,8])test(`Gemini envia ${count} fotos sem campos desconhe
  const h=harness(),formats=['jpeg','png','webp'];
  const photos=Array.from({length:count},(_,i)=>`data:image/${formats[i%3]};base64,${Buffer.from('foto '+i).toString('base64')}`);
  const result=await h.ai.analyze(photos);
- const parts=h.calls[1].parts;
- assert.equal(parts.length,count+1);
- assert.equal(typeof parts[0],'string');
- for(let i=0;i<count;i++)assert.deepEqual(parts[i+1],{inlineData:{mimeType:'image/'+formats[i%3],data:photos[i].split(',')[1]}});
+ const requests=h.calls.filter(x=>x.parts);
+ assert.equal(requests.length,count,'uma chamada por fotografia');
+ for(let i=0;i<count;i++){
+  const parts=requests[i].parts;
+  assert.equal(parts.length,2);
+  assert.equal(typeof parts[0],'string');
+  assert.deepEqual(parts[1],{inlineData:{mimeType:'image/'+formats[i%3],data:photos[i].split(',')[1]}});
+ }
  assert.equal(h.calls[0].config.model,'gemini-3.8-flash');
  assert.equal(h.imports.length,3);
  assert.ok(h.imports.every(url=>url.startsWith('https://www.gstatic.com/firebasejs/11.10.0/')));
