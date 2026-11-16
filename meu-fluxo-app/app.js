@@ -44,6 +44,8 @@ const iconPaths={
  send:'<path d="m22 2-7 20-4-9-9-4 20-7ZM22 2 11 13"/>',
  mic:'<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5M8 22h8"/>',
  photo:'<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m21 16-6-6L5 20"/>',
+ camera:'<path d="M4 7h4l2-3h4l2 3h4v13H4V7Z"/><circle cx="12" cy="13" r="4"/>',
+ scan:'<path d="M8 3H4v4M16 3h4v4M20 17v4h-4M8 21H4v-4M5 12h14"/>',
  chevron:'<path d="m9 18 6-6-6-6"/>',
  refresh:'<path d="M20 11a8 8 0 1 0-2.4 5.7M20 4v7h-7"/>',
  file:'<path d="M13 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10l-7-7ZM13 3v7h7"/>',
