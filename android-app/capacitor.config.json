@@ -1,0 +1,12 @@
+{
+  "appId": "io.github.sytrius.meufluxo",
+  "appName": "Meu Fluxo",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https",
+    "hostname": "localhost"
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}
