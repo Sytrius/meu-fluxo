@@ -4,9 +4,23 @@
 'use strict';
 let clientPromise=null;
 const sdk='https://www.gstatic.com/firebasejs/11.10.0/';
+function siteKey(){
+ let local='';
+ try{local=root.localStorage?.getItem?.('meu-fluxo-appcheck-site-key')||''}catch{}
+ const configuredKey=root.MEU_FLUXO_APPCHECK_SITE_KEY||local;
+ return typeof configuredKey==='string'?configuredKey.trim():'';
+}
 function configured(){
- const cfg=root.MEU_FLUXO_FIREBASE_CONFIG,key=root.MEU_FLUXO_APPCHECK_SITE_KEY;
- return !!(cfg?.apiKey&&cfg?.projectId&&typeof key==='string'&&key.trim().length>10);
+ const cfg=root.MEU_FLUXO_FIREBASE_CONFIG,key=siteKey();
+ return !!(cfg?.apiKey&&cfg?.projectId&&key.length>10);
+}
+function configurePublicSiteKey(value){
+ const key=String(value||'').trim();
+ if(key&&!/^[A-Za-z0-9_-]{15,160}$/.test(key))throw Error('Informe somente a chave pública do site reCAPTCHA Enterprise. Não cole segredos ou chaves de servidor.');
+ if(!root.localStorage)throw Error('Este navegador não permite guardar a configuração local.');
+ if(key)root.localStorage.setItem('meu-fluxo-appcheck-site-key',key);
+ else root.localStorage.removeItem('meu-fluxo-appcheck-site-key');
+ clientPromise=null;
 }
 async function client(){
  if(!configured())throw Error('IA não habilitada: o proprietário deve ativar Firebase AI Logic, configurar App Check e publicar a chave pública reCAPTCHA Enterprise.');
@@ -18,7 +32,7 @@ async function client(){
   let app=appmod.getApps().find(x=>x.name==='meu-fluxo-receipt-ai');
   if(!app)app=appmod.initializeApp(root.MEU_FLUXO_FIREBASE_CONFIG,'meu-fluxo-receipt-ai');
   check.initializeAppCheck(app,{
-   provider:new check.ReCaptchaEnterpriseProvider(root.MEU_FLUXO_APPCHECK_SITE_KEY.trim()),
+   provider:new check.ReCaptchaEnterpriseProvider(siteKey()),
    isTokenAutoRefreshEnabled:true
   });
   const ai=aimod.getAI(app,{backend:new aimod.GoogleAIBackend()});
@@ -67,5 +81,5 @@ async function analyze(photos){
  try{parsed=JSON.parse(reply)}catch{throw Error('A resposta da IA não é JSON válido. Tente novamente.')}
  return root.MeuFluxoReceiptHybrid.validateReceipt(parsed);
 }
-root.MeuFluxoReceiptAI={configured,analyze};
+root.MeuFluxoReceiptAI={configured,analyze,siteKey,configurePublicSiteKey};
 })(typeof globalThis!=='undefined'?globalThis:this);
