@@ -79,7 +79,45 @@ function validateReceipt(raw){
   date,total,sum,expected,raw:'Leitura assistida por IA; confira sempre a fotografia original.',
   pageCount:0,balanced:!!out.length&&total!==null&&sum===total&&(expected===null||expected===out.length)&&warnings.length===0};
 }
-const api={officialURL,fromAccessKey,validateReceipt};
+
+/* Mescla trechos de uma mesma nota, preservando números de item distintos e
+   exigindo revisão quando duas fotos discordam do mesmo registro. */
+function mergeAIPhotoResults(pages){
+ if(!Array.isArray(pages)||!pages.length||pages.length>8)throw Error('Selecione de uma a oito respostas de fotos.');
+ const records=[],byNumber=new Map(),issues=[],merchants=new Set(),dates=new Set(),counts=new Set(),totals=new Set();
+ for(let p=0;p<pages.length;p++){
+  const page=pages[p];
+  if(!page||typeof page!=='object'||!Array.isArray(page.items)||page.items.length>180)
+   throw Error('A resposta da foto '+(p+1)+' não contém uma lista válida de produtos.');
+  if(typeof page.merchant==='string'&&page.merchant.trim())merchants.add(page.merchant.trim());
+  if(typeof page.date==='string'&&page.date.trim())dates.add(page.date.trim());
+  if(Number.isInteger(Number(page.itemCount))&&Number(page.itemCount)>0)counts.add(Number(page.itemCount));
+  if(Number.isSafeInteger(Number(page.totalCents))&&Number(page.totalCents)>0)totals.add(Number(page.totalCents));
+  for(const item of page.items){
+   if(!item||typeof item!=='object')continue;
+   const n=Number(item.number);
+   if(!Number.isInteger(n)||n<=0||n>500){records.push(item);continue}
+   if(!byNumber.has(n)){byNumber.set(n,records.length);records.push(item);continue}
+   const previous=records[byNumber.get(n)];
+   const fields=['barcode','name','quantity','unit','netCents','grossCents','discountCents'];
+   const different=fields.some(k=>String(previous[k]??'').trim().toUpperCase()!==String(item[k]??'').trim().toUpperCase());
+   if(different)issues.push('O item '+n+' foi reconhecido de forma diferente em duas fotografias. Revise-o manualmente.');
+   // Não somar novamente itens repetidos na área de sobreposição.
+  }
+ }
+ if(totals.size>1)issues.push('As fotos mostram totais diferentes. Confirme que pertencem à mesma nota.');
+ if(counts.size>1)issues.push('As fotos mostram contagens diferentes de itens.');
+ if(merchants.size>1)issues.push('As fotografias podem ter estabelecimentos diferentes. Confirme a compra.');
+ if(dates.size>1)issues.push('As fotografias apresentam datas diferentes.');
+ const merged=validateReceipt({merchant:[...merchants][0]||'',date:[...dates][0]||'',
+  totalCents:[...totals][0]||0,itemCount:[...counts][0]||0,items:records});
+ merged.pageCount=pages.length;
+ merged.issues=[...new Set([...merged.issues,...issues])];
+ merged.balanced=merged.balanced&&merged.issues.length===0;
+ return merged;
+}
+
+const api={officialURL,fromAccessKey,validateReceipt,mergeAIPhotoResults};
 root.MeuFluxoReceiptHybrid=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof globalThis!=='undefined'?globalThis:this);
