@@ -86,11 +86,11 @@ test('com fotos de lojas diferentes, gera aviso em vez de garantir compra única
 test('nota extensa com 27 itens, três fotos e áreas sobrepostas não duplica valores',()=>{
  const lines=Array.from({length:27},(_,i)=>{
   const n=String(i+1).padStart(2,'0'),barcode='789000000'+String(i+1).padStart(4,'0');
-  return 'N'+n+' '+barcode+' PRODUTO '+n+'\\nUN X 10,00\\nDesconto -0,10\\nValor Liquido 9,90';
+  return 'N'+n+' '+barcode+' PRODUTO '+n+'\nUN X 10,00\nDesconto -0,10\nValor Liquido 9,90';
  });
- const first='SUPERMERCADO CHAGAS\\n15/11/2026\\n'+lines.slice(0,10).join('\\n');
- const middle=lines.slice(9,20).join('\\n');
- const last=lines.slice(19).join('\\n')+'\\nQTD. TOTAL DE ITENS 027\\nVALOR A PAGAR R$ 267,30';
+ const first='SUPERMERCADO CHAGAS\n15/11/2026\n'+lines.slice(0,10).join('\n');
+ const middle=lines.slice(9,20).join('\n');
+ const last=lines.slice(19).join('\n')+'\nQTD. TOTAL DE ITENS 027\nVALOR A PAGAR R$ 267,30';
  const merged=P.combine([first,middle,last]);
  assert.equal(merged.items.length,27);
  assert.equal(merged.total,26730);
