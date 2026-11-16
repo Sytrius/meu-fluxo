@@ -504,6 +504,12 @@ async function loadFirebaseClient(){
  firebaseClient={auth,instance:auth.getAuth(app)};await auth.setPersistence(firebaseClient.instance,auth.browserLocalPersistence);return firebaseClient;
 }
 async function signInGoogle(){
+ if(globalThis.MeuFluxoNative?.available){
+ const {user}=await globalThis.MeuFluxoNative.googleAuth.signIn();
+ if(!user?.uid||!user.providerData?.some(x=>x.providerId==='google.com'))throw Error('Conta Google não verificada.');
+ await switchProfile({kind:'google',id:user.uid,name:user.displayName||user.email||'Google',email:user.email||''});
+ uiToast('Conta Google selecionada. Histórico local separado.');return;
+ }
  const {auth,instance}=await loadFirebaseClient();
  const provider=new auth.GoogleAuthProvider();provider.setCustomParameters({prompt:'select_account'});
  const result=await auth.signInWithPopup(instance,provider);
@@ -511,8 +517,19 @@ async function signInGoogle(){
  await switchProfile({kind:'google',id:user.uid,name:user.displayName||user.email||'Google',email:user.email||''});
  uiToast('Conta Google selecionada. Histórico local separado.');
 }
-async function signOutGoogle(){if(activeProfile.kind!=='google'){uiToast('Você já está no perfil local.');return}const client=await loadFirebaseClient();await client.auth.signOut(client.instance);await switchProfile(ACTIVE_LOCAL);uiToast('Você saiu da conta Google.');}
+async function signOutGoogle(){if(activeProfile.kind!=='google'){uiToast('Você já está no perfil local.');return}if(globalThis.MeuFluxoNative?.available)await globalThis.MeuFluxoNative.googleAuth.signOut();else{const client=await loadFirebaseClient();await client.auth.signOut(client.instance)}await switchProfile(ACTIVE_LOCAL);uiToast('Você saiu da conta Google.');}
 async function initGoogleSession(){
+ if(globalThis.MeuFluxoNative?.available){
+ try{
+ const {user}=await globalThis.MeuFluxoNative.googleAuth.getCurrentUser();
+ if(user?.uid&&user.providerData?.some(x=>x.providerId==='google.com')){
+ const profile={kind:'google',id:user.uid,name:user.displayName||user.email||'Google',email:user.email||''};
+ if(activeProfile.kind!=='google'||activeProfile.id!==user.uid)await switchProfile(profile);
+ else{activeProfile=profile;saveSelectedProfile(profile);render()}
+ }else if(activeProfile.kind==='google')await switchProfile(ACTIVE_LOCAL);
+ }catch(error){console.warn('Sessão nativa indisponível',error)}
+ return;
+ }
  if(!globalThis.MEU_FLUXO_FIREBASE_CONFIG?.apiKey||!navigator.onLine)return;
  try{const {auth,instance}=await loadFirebaseClient();await auth.authStateReady(instance);
  const user=instance.currentUser;
