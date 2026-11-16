@@ -19,30 +19,22 @@ const isJunk=t=>/^(?:CNPJ|CPF|DANFE|NFC.?E|EMITIDA\s+EM|PENDENTE|CHAVE\s+DE|CONS
 function parseQuantity(line){
  const t=norm(line);
  // Impresso normalmente como UN X 2,65, UN X 2 4,99 ou 0,500 KG X 34,00.
- let m=t.match(/^(\d+(?:[,.]\d{1,3})?)\s*(KG|G|UN|UND|UNID|L|LT|ML)\s*[X*]\s*(\d+(?:\.\d{3})*,\d{2}|\d+,\d{2})/);
- if(m){
-  const q=Number(m[1].replace(',','.'));
-  if(!q||!Number.isFinite(q))return null;
-  return {qty:q,unit:unit(m[2]),unitCents:toCents(m[3]),reliability:2};
- }
- m=t.match(/^(UN|UND|UNID|KG|G|LT|L|ML)\s*[X*]\s*(\d+(?:[,.]\d{1,3})?)\s+(?:[X*]\s*)?(\d+(?:\.\d{3})*,\d{2}|\d+,\d{2})\b/);
- if(m){
-  const q=Number(m[2].replace(',','.'));if(!q||!Number.isFinite(q))return null;
-  return {qty:q,unit:unit(m[1]),unitCents:toCents(m[3]),reliability:2};
- }
- m=t.match(/^(UN|UND|UNID|KG|G|LT|L|ML)\s*[X*]\s*(\d+(?:\.\d{3})*,\d{2}|\d+,\d{2})\s*$/);
- if(m)return {qty:1,unit:unit(m[1]),unitCents:toCents(m[2]),reliability:1};
+ let m=t.match(/^(?:(\d+(?:[,.]\d{1,3})?)\s*)?(KG|G|UN|UND|UNID|L|LT|ML)\s*[X*]\s*(\d+(?:\.\d{3})*,\d{2})(?:\s+(\d+(?:\.\d{3})*,\d{2}))?\s*$/);
+ if(m){const qty=m[1]?Number(m[1].replace(',','.')):1;if(qty>0)return {qty,unit:unit(m[2]),unitCents:toCents(m[3]),printedGross:m[4]?toCents(m[4]):null,reliability:m[1]?2:1}}
+ // Alternate layout: UN X quantity unit-price.
+ m=t.match(/^(UN|UND|UNID|KG|G|LT|L|ML)\s*[X*]\s*(\d+(?:[,.]\d{1,3})?)\s+(\d+,\d{2})$/);
+ if(m){const qty=Number(m[2].replace(',','.'));if(qty>0)return {qty,unit:unit(m[1]),unitCents:toCents(m[3]),reliability:2}}
  // Também pode ocorrer "UN X 2 5,00" sem separador claro.
  return null;
 }
 function unit(v){return ({UN:'un',UND:'un',UNID:'un',KG:'kg',G:'g',LT:'l',L:'l',ML:'ml'})[v]||'un'}
 function itemHeader(line){
  const t=norm(line);
- const m=t.match(/^(?:N[Oº°]?\s*)?0?(\d{1,3})\s+(\d{8,14})\s+(.{3,})$/);
+ const m=t.match(/^[)\].]*(?:N[Oº°]?\s*)?[DOO]?([0-9lI]{1,3})\s*([0-9]{8,14})\s+(.{3,})$/);
  if(!m||isSummary(t))return null;
  const name=m[3].replace(/\s+(?:UN|KG|LT)\s*$/,'').trim();
  if(!/[A-Z]{3}/.test(name))return null;
- return {number:Number(m[1]),barcode:m[2],name:name.slice(0,100)};
+ return {number:Number(m[1].replace(/[lI]/g,'1')),barcode:m[2],name:name.slice(0,100)};
 }
 function amountAndRank(t){
  const money=endMoney(t);
@@ -54,7 +46,7 @@ function amountAndRank(t){
  return null;
 }
 function parsePhoto(text,photo=0){
- const lines=String(text||'').split(/\r?\n/).map(x=>x.replace(/\s+/g,' ').trim()).filter(Boolean).slice(0,750);
+ const lines=String(text||'').split(/\r?\n/).map(x=>x.replace(/\s+/g,' ').trim()).filter(Boolean).slice(0,4000);
  const items=[],pending=[],scores=[],errors=[],totals=[];
  let active=null,expected=null;
  function finish(){
@@ -90,7 +82,7 @@ function parsePhoto(text,photo=0){
    const q=parseQuantity(line);
    if(q){
     active.qty=q.qty;active.unit=q.unit;active.unitCents=q.unitCents;
-    active.gross=Math.round(q.qty*q.unitCents);
+    active.gross=q.printedGross??Math.round(q.qty*q.unitCents);
     if(Math.abs(active.gross)>1e12)active.gross=null;
     continue;
    }
@@ -150,14 +142,15 @@ function combine(photos){
  if(dates.size>1)issues.push('As fotos contêm datas diferentes. Confira se pertencem à mesma compra.');
  const candidates=totals.sort((a,b)=>b.rank-a.rank);
  const total=candidates[0]?.money??null;
- if(candidates.some(v=>v.rank>=4&&total!==null&&v.money!==total))issues.push('Valores totais diferentes entre as fotos. Verifique se todas pertencem à mesma nota.');
+ if(candidates.some(v=>v.rank===candidates[0]?.rank&&total!==null&&v.money!==total))issues.push('Valores totais diferentes entre as fotos. Verifique se todas pertencem à mesma nota.');
  if(merchants.size>1)issues.push('As fotos parecem mostrar lojas diferentes. Verifique se pertencem à mesma nota.');
  const sum=items.reduce((n,x)=>n+x.cents,0);
  if(expected!==null&&items.length!==expected)issues.push('A nota indica '+expected+' itens, mas foram reconhecidos '+items.length+'. Fotografe as partes faltantes ou complete manualmente.');
- if(pending.length)issues.push(pending.length+' item(ns) identificado(s) sem valor líquido confiável.');
+ const unresolved=pending.filter(p=>!items.some(i=>i.number===p.number));
+ if(unresolved.length)issues.push(unresolved.length+' item(ns) identificado(s) sem valor líquido confiável.');
  if(total!==null&&sum!==total)issues.push('Soma de itens '+(sum/100).toFixed(2)+' diferente do total a pagar '+(total/100).toFixed(2)+'. Revise os descontos e itens ausentes.');
  if(!pages.length||!items.length)issues.push('Nenhum item identificado com segurança; fotografe mais de perto ou preencha manualmente.');
- return {items,total,sum,expected,merchant:pages.find(p=>p.merchant)?.merchant||'',date:pages.find(p=>p.date)?.date||null,pending,issues:[...new Set(issues)],raw:pages.map((p,i)=>'FOTO '+(i+1)+'\n'+p.raw).join('\n\n'),pageCount:pages.length,balanced:total!==null&&items.length>0&&sum===total&&(expected===null||expected===items.length)&&pending.length===0};
+ return {items,total,sum,expected,merchant:pages.find(p=>p.merchant)?.merchant||'',date:pages.find(p=>p.date)?.date||null,pending:unresolved,issues:[...new Set(issues)],raw:pages.map((p,i)=>'FOTO '+(i+1)+'\n'+p.raw).join('\n\n'),pageCount:pages.length,balanced:total!==null&&items.length>0&&sum===total&&(expected===null||expected===items.length)&&unresolved.length===0};
 }
 const api={parsePhoto,combine,parseQuantity,itemHeader};
 root.MeuFluxoReceiptMulti=api;

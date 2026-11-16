@@ -8,7 +8,7 @@ function setUp(entry=null){
  state.editingReceiptPhotos=[...photos];state.editingReceipt=photos[0]||null;state.receiptOCRUsed=false;draft=null;runId++;
 }
 function controlHTML(){
- return `<div class="field span-2 receipt-multi-field"><label>Fotos da mesma nota (até 8 partes)</label><p class="help">Fotografe a nota por trechos, de perto e com sobreposição. Todas as imagens serão reunidas em uma única compra, sem despesas duplicadas.</p><div class="receipt-photo-inputs"><label class="btn btn-outline btn-sm" for="entry-receipt">${ico('plus')} Selecionar fotos</label><input type="file" id="entry-receipt" class="receipt-hidden-input" accept="image/jpeg,image/png,image/webp" multiple><label class="btn btn-outline btn-sm" for="entry-receipt-camera">${ico('camera')} Fotografar outro trecho</label><input type="file" id="entry-receipt-camera" class="receipt-hidden-input" accept="image/jpeg,image/png,image/webp" capture="environment"></div><div id="receipt-status" class="receipt-photo-gallery"></div><p class="help">Para notas grandes: 5 a 8 produtos por foto, luz uniforme, papel plano e 20% de sobreposição. Inclua o cabeçalho e o total final.</p><div class="receipt-ocr-actions">${root.MeuFluxoNative?.available?`<button type="button" class="btn btn-primary btn-sm" data-action="receipt-native-scan">${ico('camera')} Digitalizar com ML Kit</button>`:''}<button type="button" class="btn btn-outline btn-sm" data-action="receipt-multi-scan">${ico('scan')} Ler fotos como uma compra</button></div><div id="receipt-ocr-status" class="help" role="status" aria-live="polite"></div><div id="receipt-ocr-review"></div><label id="receipt-review-label" class="receipt-verified" hidden><input type="checkbox" id="receipt-reviewed"> Conferi todos os produtos, preços, descontos e quantidades antes de salvar.</label></div>`;
+ return `<div class="field span-2 receipt-multi-field"><label>Fotos da mesma nota (até 8 partes)</label><p class="help">Fotografe a nota por trechos, de perto e com sobreposição. Todas as imagens serão reunidas em uma única compra, sem despesas duplicadas.</p><div class="receipt-photo-inputs"><label class="btn btn-outline btn-sm" for="entry-receipt">${ico('plus')} Selecionar fotos</label><input type="file" id="entry-receipt" class="receipt-hidden-input" accept="image/jpeg,image/png,image/webp" multiple>${root.MeuFluxoNative?.available?'<button type="button" class="btn btn-outline btn-sm" data-action="receipt-camera">Fotografar outro trecho</button>':''}<label class="btn btn-outline btn-sm" ${root.MeuFluxoNative?.available?'hidden':''} for="entry-receipt-camera">${ico('camera')} Fotografar outro trecho</label><input type="file" id="entry-receipt-camera" class="receipt-hidden-input" accept="image/jpeg,image/png,image/webp" capture="environment"></div><div id="receipt-status" class="receipt-photo-gallery"></div><p class="help">Para notas grandes: 5 a 8 produtos por foto, luz uniforme, papel plano e 20% de sobreposição. Inclua o cabeçalho e o total final.</p><div class="receipt-ocr-actions">${root.MeuFluxoNative?.available?`<button type="button" class="btn btn-primary btn-sm" data-action="receipt-native-scan">${ico('camera')} Digitalizar com ML Kit</button>`:''}<button type="button" class="btn btn-outline btn-sm" data-action="receipt-multi-scan">${ico('scan')} Ler fotos como uma compra</button></div><div id="receipt-ocr-status" class="help" role="status" aria-live="polite"></div><div id="receipt-ocr-review"></div><label id="receipt-review-label" class="receipt-verified" hidden><input type="checkbox" id="receipt-reviewed"> Conferi todos os produtos, preços, descontos e quantidades antes de salvar.</label></div>`;
 }
 function status(msg){const e=$('#receipt-ocr-status');if(e)e.textContent=msg}
 function renderPhotos(){
@@ -193,6 +193,13 @@ async function nativeScan() {
 
 async function action(button){
  const a=button.dataset.action;
+ if(a==='receipt-camera'){
+  if(loading)throw Error('Espere a leitura terminar.');
+  if(photos.length>=8)throw Error('Máximo de oito fotos.');
+  const uri=await root.MeuFluxoNative.capturePhoto();if(!uri)return true;
+  const blob=await (await fetch(uri)).blob();
+  await addPhotos([new File([blob],'trecho.jpg',{type:'image/jpeg'})]);return true;
+ }
  if(a==='receipt-native-scan'){await nativeScan();return true}
  if(a==='receipt-multi-scan'){await scan();return true}
  if(a==='receipt-multi-apply'){apply();return true}

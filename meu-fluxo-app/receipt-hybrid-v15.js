@@ -9,7 +9,7 @@ function officialURL(raw){
  try{
   const url=new URL(raw.trim());
   if(!['http:','https:'].includes(url.protocol)||url.username||url.password||!officialHosts.has(url.hostname.toLowerCase())||url.port)return null;
-  if(!/^\/nfce\/consulta\/?$/.test(url.pathname))return null;
+  if(!/^\/(?:nfce|nfce-web)\/consulta\/?$/.test(url.pathname))return null;
   if(!url.searchParams.has('p'))return null;
   const parts=url.searchParams.get('p').split('|');
   if(!/^\d{44}$/.test(parts[0]))return null;

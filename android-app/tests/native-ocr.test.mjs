@@ -4,15 +4,16 @@ import fs from 'node:fs/promises';
 import vm from 'node:vm';
 import {webcrypto} from 'node:crypto';
 import {deadline} from '../src/deadline.mjs';
+import {receiptText} from '../src/receipt-layout.mjs';
 const source=(await fs.readFile(new URL('../src/native.mjs',import.meta.url),'utf8')).replace(/^import .*;\r?\n/gm,'');
 function bridge(fail=false){
  const writes=[],deleted=[],reads=[];
- const ctx={console,crypto:webcrypto,deadline,
+ const ctx={console,crypto:webcrypto,deadline,receiptText,
  Capacitor:{isNativePlatform:()=>true,getPlatform:()=> 'android'},registerPlugin:()=>({}),
  Directory:{Cache:'CACHE'},Filesystem:{
  writeFile:async options=>{writes.push(options);return {uri:'file:///cache/'+options.path}},
  deleteFile:async options=>{deleted.push(options)}
- },App:{addListener:()=>Promise.resolve()},DocumentScanner:{},BarcodeScanner:{},BarcodeFormat:{},Script:{Latin:'LATIN'},
+ },App:{addListener:()=>Promise.resolve()},DocumentScanner:{scanDocument:async options=>{reads.push(options);return {scannedImages:[]}}},BarcodeScanner:{readBarcodesFromImage:async options=>{reads.push(options);return {barcodes:[{rawValue:'https://nfce.sefaz.pe.gov.br/nfce-web/consulta?p=teste'}]}}},BarcodeFormat:{QrCode:'QR_CODE'},Script:{Latin:'LATIN'},
  TextRecognition:{processImage:async options=>{reads.push(options);if(fail)throw Error('Imagem ilegível');return {text:'ARROZ 10,00'}}}
  };
  vm.runInNewContext(source,ctx);
@@ -30,4 +31,11 @@ test('falha do ML Kit também limpa apenas cache e retorna erro',async()=>{
  const {api,writes,deleted}=bridge(true);
  await assert.rejects(api.recognizePhoto('data:image/png;base64,QUJD'),/Imagem ilegível/);
  assert.equal(deleted[0].path,writes[0].path);
+});
+
+test('QR das fotos usa arquivo local; câmera de trecho não oferece galeria',async()=>{
+ const {api,reads,deleted}=bridge();
+ const result=await api.readPhotoQR('data:image/jpeg;base64,QUJD');
+ assert.match(result[0],/nfce-web/);assert.equal(deleted.length,1);
+ await api.capturePhoto();assert.equal(reads.at(-1).galleryImportAllowed,false);assert.equal(reads.at(-1).pageLimit,1);
 });

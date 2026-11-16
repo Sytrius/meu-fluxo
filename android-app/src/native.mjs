@@ -4,6 +4,7 @@
  */
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
+import { receiptText } from './receipt-layout.mjs';
 import { deadline } from './deadline.mjs';
 import { App } from '@capacitor/app';
 import { DocumentScanner } from '@capacitor-mlkit/document-scanner';
@@ -13,7 +14,7 @@ import { BarcodeScanner, BarcodeFormat } from '@capacitor-mlkit/barcode-scanning
 const available = Capacitor.isNativePlatform() && Capacitor.getPlatform()==='android';
 // This bridge is Android-only; do not bundle the plugin's Firebase Web adapter.
 const FirebaseAuthentication = registerPlugin('FirebaseAuthentication');
-async function recognizePhoto(dataUrl) {
+async function recognizePhoto(dataUrl, qr = false) {
   if (!available) throw new Error('OCR nativo exige Android.');
   const match = /^data:image\/(jpeg|png|webp);base64,([\s\S]+)$/.exec(dataUrl);
   if (!match) throw new Error('Fotografia anexada inválida.');
@@ -22,8 +23,9 @@ async function recognizePhoto(dataUrl) {
   const task = (async () => {
     try {
       const file = await Filesystem.writeFile({path, directory: Directory.Cache, data: match[2]});
+      if(qr){const result=await BarcodeScanner.readBarcodesFromImage({path:file.uri,formats:[BarcodeFormat.QrCode]});return (result.barcodes||[]).map(b=>b.rawValue||b.displayValue||'')}
       const result = await TextRecognition.processImage({path: file.uri, script: Script.Latin});
-      return String(result.text || '').slice(0, 30000);
+      return receiptText(result).slice(0, 120000);
     } finally {
       await Filesystem.deleteFile({path, directory: Directory.Cache}).catch(() => {});
     }
@@ -65,9 +67,14 @@ async function scanReceipt() {
     // O plugin OCR utiliza o caminho local original; a interface armazena uma cópia comprimida.
     const result=await TextRecognition.processImage({path,script:Script.Latin});
     const dataUrl=await readPhotoAsDataURL(path);
-    pages.push({path,dataUrl,text:String(result?.text||''),blocks:result?.blocks||[]});
+    pages.push({path,dataUrl,text:receiptText(result),blocks:result?.blocks||[]});
   }
   return pages;
+}
+async function capturePhoto(){
+ const res=await DocumentScanner.scanDocument({galleryImportAllowed:false,pageLimit:1,resultFormats:'JPEG',scannerMode:'FULL'});
+ const path=(res.scannedImages||[]).map(asUri).find(Boolean);
+ return path?readPhotoAsDataURL(path):null;
 }
 async function scanQR() {
   if (!available) throw new Error('Leitura nativa do QR disponível apenas no Android.');
@@ -84,4 +91,4 @@ if (available) {
     }
   }).catch(()=>{});
 }
-globalThis.MeuFluxoNative={available,scanReceipt,scanQR,recognizePhoto,googleAuth};
+globalThis.MeuFluxoNative={available,scanReceipt,scanQR,recognizePhoto,googleAuth,capturePhoto,readPhotoQR:uri=>recognizePhoto(uri,true)};

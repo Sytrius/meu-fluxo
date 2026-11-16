@@ -28,7 +28,14 @@ function showQr(raw){
 }
 async function scanQR(){
  if(root.MeuFluxoNative?.available){
-  const raw=await root.MeuFluxoNative.scanQR();
+  const photos=root.MeuFluxoReceiptCapture?.getPhotos?.()||[];
+  const area=$('#hybrid-qr-result');if(area)area.textContent='Procurando QR nas fotos anexadas...';
+  let raw='';
+  for(const photo of photos){
+   const codes=await root.MeuFluxoNative.readPhotoQR(photo);
+   raw=codes.find(c=>H().officialURL(c))||'';if(raw)break;
+  }
+  if(!raw){if(area)area.textContent='Nenhum QR visível nas fotos. Fotografe o quadrado completo do QR, abaixo da chave de acesso. A chave impressa não é um QR Code.';return}
   if(!raw)throw Error('Leitura do QR Code cancelada ou sem resultado.');
   const field=$('#hybrid-qr-input');if(field)field.value=raw;
   showQr(raw);return;
