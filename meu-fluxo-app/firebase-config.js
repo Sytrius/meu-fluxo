@@ -9,3 +9,8 @@ window.MEU_FLUXO_FIREBASE_CONFIG = {
   appId: "1:492290928705:web:95c6d070352796570696c0",
   measurementId: "G-542BMN62XS"
 };
+
+// Chave de SITE pública do reCAPTCHA Enterprise (NÃO é segredo).
+// Obtenha em Google Cloud > reCAPTCHA Enterprise e registre em Firebase > App Check.
+// Sem essa configuração, a leitura Gemini não faz requisições; o OCR local funciona normalmente.
+window.MEU_FLUXO_APPCHECK_SITE_KEY = '';
