@@ -26,7 +26,7 @@ jobs:
         run: |
           test -s release/MeuFluxo-Android-Preview.apk
           cd release
-          sha256sum -c SHA256.txt
+          sed 's#android-app/dist/##' SHA256.txt | sha256sum -c -
       - name: Publicar instalador direto no GitHub Releases
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
