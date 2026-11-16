@@ -43,7 +43,7 @@ function validateReceipt(raw){
   }
   const n=Number.isInteger(number)&&number>=1&&number<=500?number:null;
   const e={name,qty,unit,cents:net,number:n,barcode:/^\d{8,14}$/.test(barcode)?barcode:null,
-    grossCents:money(gross)?gross:null,discountCents:money(disc)?disc:null,
+    grossCents:money(gross)&&gross>0?gross:null,discountCents:money(disc)?disc:null,
     quality:2,sourcePhotos:[]};
   if(e.grossCents!==null&&e.discountCents!==null&&Math.abs(e.grossCents-e.discountCents-e.cents)>2){
    warnings.push('Valor bruto, desconto e líquido não coincidem no item '+(n||i+1)+'.');
