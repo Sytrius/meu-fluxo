@@ -41,3 +41,35 @@ test('divergência bruto menos desconto não é ignorada',()=>{
  const m=structuredClone(mock);m.items[0].discountCents=200;
  const r=H.validateReceipt(m);assert.match(r.issues.join(' '),/não coincidem/);
 });
+
+test('combina fotos sem duplicar produtos repetidos nas áreas sobrepostas',()=>{
+ const a={merchant:'Mercado',date:'',itemCount:0,totalCents:0,items:[
+  {number:1,barcode:'7891111111111',name:'Arroz',quantity:1,unit:'un',grossCents:1000,discountCents:20,netCents:980},
+  {number:2,barcode:'7892222222222',name:'Leite',quantity:1,unit:'un',grossCents:700,discountCents:0,netCents:700}
+ ]};
+ const b={merchant:'Mercado',date:'2026-11-15',itemCount:3,totalCents:2180,items:[
+  {...a.items[1]},
+  {number:3,barcode:'7893333333333',name:'Cafe',quantity:1,unit:'un',grossCents:500,discountCents:0,netCents:500}
+ ]};
+ const merged=H.mergeAIPhotoResults([a,b]);
+ assert.equal(merged.items.length,3);
+ assert.equal(merged.sum,2180);
+ assert.equal(merged.total,2180);
+ assert.equal(merged.expected,3);
+ assert.equal(merged.balanced,true);
+});
+test('não apaga duas compras do mesmo produto com números diferentes',()=>{
+ const product={number:1,barcode:'7891111111111',name:'Frango',quantity:1,unit:'un',grossCents:2000,discountCents:0,netCents:2000};
+ const p1={merchant:'Mercado',date:'',itemCount:0,totalCents:0,items:[product]};
+ const p2={merchant:'',date:'',itemCount:2,totalCents:4000,items:[{...product,number:2}]};
+ const merged=H.mergeAIPhotoResults([p1,p2]);
+ assert.equal(merged.items.length,2);assert.equal(merged.balanced,true);
+});
+test('itens repetidos com valores divergentes precisam revisão',()=>{
+ const p1={merchant:'Mercado',itemCount:0,totalCents:0,items:[{number:1,name:'Arroz',quantity:1,unit:'un',netCents:1000}]};
+ const p2={merchant:'Mercado',itemCount:1,totalCents:1300,items:[{number:1,name:'Arroz',quantity:1,unit:'un',netCents:1300}]};
+ const merged=H.mergeAIPhotoResults([p1,p2]);
+ assert.equal(merged.items.length,1);
+ assert.equal(merged.balanced,false);
+ assert.match(merged.issues.join(' '),/forma diferente/);
+});
