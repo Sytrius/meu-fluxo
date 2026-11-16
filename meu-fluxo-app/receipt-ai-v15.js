@@ -69,7 +69,8 @@ async function analyze(photos){
  const parts=photos.map(uri=>{
   const m=/^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/=]+)$/.exec(uri||'');
   if(!m)throw Error('Uma foto possui formato inválido.');
-  return {type:'inlineData',inlineData:{mimeType:'image/'+m[1],data:m[2]}};
+  // Firebase Web SDK 11.10.0 forwards Part fields to the API: no `type` discriminator.
+  return {inlineData:{mimeType:'image/'+m[1],data:m[2]}};
  });
  const bytes=parts.reduce((n,x)=>n+x.inlineData.data.length,0);
  if(bytes>12*1024*1024)throw Error('Imagens muito grandes para análise online. Tente menos fotos ou reduza os arquivos.');
