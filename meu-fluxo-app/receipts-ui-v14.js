@@ -109,10 +109,10 @@ function rows(query=''){
 function page(){
  const catalog=R().catalog(state.entries);
  const receiptCount=state.entries.filter(x=>x.type==='expense'&&x.items?.length).length;
- return `<div class="page-head"><div><p class="eyebrow">HISTÓRICO DE CONSUMO</p><h1 class="page-title">Produtos e preços</h1><p class="page-sub">Compare o custo de produtos por unidade, kg ou litro usando compras registradas por você.</p></div><button class="btn btn-primary" data-action="receipt-new">${ico('plus')} Nova compra por foto</button></div>
+ return `<div class="page-head"><div><p class="eyebrow">HISTÓRICO DE CONSUMO</p><h1 class="page-title">Produtos e preços</h1><p class="page-sub">Compare o custo de produtos por unidade, kg ou litro usando compras registradas por você.</p></div><button class="btn btn-primary" data-action="receipt-new">${ico('plus')} Importar lista de compra</button></div>
  <div class="grid-kpi receipt-kpis"><div class="card kpi"><div class="kpi-label">Produtos identificados</div><div class="kpi-value">${catalog.length}</div><p class="panel-sub">Nomes e unidades distintas</p></div><div class="card kpi"><div class="kpi-label">Compras detalhadas</div><div class="kpi-value">${receiptCount}</div><p class="panel-sub">Somente transações confirmadas</p></div></div>
  <section class="card panel"><div class="panel-head"><div><h2 class="panel-title">Histórico de preços</h2><p class="panel-sub">As comparações agrupam nomes iguais e unidades equivalentes; confira marcas e embalagens antes de comparar.</p></div></div><div class="search receipt-search">${ico('search')}<input class="input" id="price-filter" placeholder="Buscar arroz, leite, sabonete..." aria-label="Buscar produtos"></div><div id="price-results">${rows()}</div></section>
- <div class="note" style="margin-top:16px">Os preços são calculados a partir das notas e compras que você confirmou. Não são cotações da internet nem preços atuais das lojas. Fotos permanecem neste aparelho e são incluídas no backup.</div>`;
+ <div class="note" style="margin-top:16px">Os preços são calculados a partir das compras que você confirmou. Não são cotações da internet nem preços atuais das lojas. Fotografias antigas já salvas continuam disponíveis nas respectivas compras.</div>`;
 }
 function filter(){
  const el=$('#price-results');if(el)el.innerHTML=rows($('#price-filter')?.value||'');
@@ -125,7 +125,7 @@ function history(key){
 }
 async function action(btn){
  const name=btn.dataset.action;
- if(name==='receipt-new'){entryModal();$('#entry-receipt')?.focus();return true}
+ if(name==='receipt-new'){entryModal();$('#entry-receipt-file')?.focus();return true}
  if(name==='receipt-scan'){await scan();return true}
  if(name==='receipt-apply'){apply();return true}
  if(name==='receipt-history'){history(btn.dataset.key);return true}

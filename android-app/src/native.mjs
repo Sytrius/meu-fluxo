@@ -92,4 +92,4 @@ if (available) {
     }
   }).catch(()=>{});
 }
-globalThis.MeuFluxoNative={available,scanReceipt,scanQR,recognizePhoto,googleAuth,capturePhoto,readPhotoQR:uri=>recognizePhoto(uri,true),appCheck};
+globalThis.MeuFluxoNative={available,scanReceipt,scanQR,recognizePhoto,googleAuth,capturePhoto,readPhotoQR:uri=>recognizePhoto(uri,true),appCheck,openGemini:()=>appCheck.openGemini()};

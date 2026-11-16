@@ -31,8 +31,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BUILD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          gh release create "android-preview-0.5-${BUILD_SHA:0:8}" \
+          gh release create "android-preview-0.6-${BUILD_SHA:0:8}" \
             release/MeuFluxo-Android-Preview.apk release/SHA256.txt release/BUILD.txt release/LEIA-ME.md \
             --repo "$GITHUB_REPOSITORY" --target "$BUILD_SHA" --prerelease \
-            --title 'Meu Fluxo Android 0.5 — Gemini com App Check Android' \
-            --notes 'Compilação Gradle e testes automatizados aprovados. Fotos anexadas usam ML Kit; login usa Firebase Auth Android. Ainda exige teste funcional em aparelho real: login, retorno, persistência e OCR. Leia LEIA-ME.md. Exporte backup antes de atualizar: assinatura do primeiro preview 0.1 era efêmera. Não é versão de produção.'
+            --title 'Meu Fluxo Android 0.6 — importar lista CSV ou XLSX' \
+            --notes 'Compilação Gradle e testes automatizados aprovados. Nova lista da nota por arquivo CSV/XLSX, link externo para Gemini e revisão antes de registrar. Fotos antigas salvas são preservadas. A planilha enviada pelo usuário foi testada localmente: 27 produtos e R$ 272,48. O APK ainda precisa de teste no aparelho real. Faça backup antes de atualizar; a assinatura é a mesma dos previews 0.2 a 0.5.'

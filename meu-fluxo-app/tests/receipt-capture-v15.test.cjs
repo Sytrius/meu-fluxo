@@ -3,6 +3,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const R=require('../receipts-v14.js'),P=require('../receipt-multipage-v15.js'),F=require('../finance-v13.js'),B=require('../backup-v2.js'),C=require('../chat-parser.js');
+const File=require('../receipt-file-v16.js');
 const {webcrypto}=require('node:crypto');
 const read=n=>fs.readFileSync(path.join(__dirname,'../'+n),'utf8');
 const ui=new Map();
@@ -93,4 +94,19 @@ test('login Android restaura sessão offline, sai e nunca abre Firebase Web',asy
  const count=ctx.switched.length;
  ctx.MeuFluxoNative.googleAuth.signIn=async()=>{throw Error('Cancelado')};
  await assert.rejects(ctx.authTest.signInGoogle(),/Cancelado/);assert.equal(ctx.switched.length,count);
+});
+test('arquivo de compra preenche uma única transação, sem foto e sem salvar',()=>{
+ const cap=ctx.MeuFluxoReceiptCapture;
+ cap.setUp(null);ctx.appTest.state.items=[];
+ const rows=[['Item','Descrição do Produto','Quantidade','Valor Líquido (R$)']];
+ for(let i=1;i<=27;i++)rows.push([String(i),'Produto '+i,'1','1,00']);
+ const draft=File.mapped(rows);
+ cap.acceptExternalDraft(draft,'arquivo');
+ cap.apply();
+ assert.equal(ctx.appTest.state.items.length,27);
+ assert.equal(ui.get('entry-amount').value,'27,00');
+ assert.equal(ui.get('entry-date').value,'');
+ assert.equal(cap.getPhotos().length,0);
+ assert.equal(ctx.appTest.state.entries.length,0);
+ assert.throws(()=>cap.canSave(),/marque que conferiu/);
 });

@@ -6,9 +6,20 @@ import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.appcheck.FirebaseAppCheck;
 import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory;
+import android.content.Intent;
+import android.net.Uri;
 
 @CapacitorPlugin(name = "ReceiptAppCheck")
 public class ReceiptAppCheckPlugin extends Plugin {
+    @PluginMethod
+    public void openGemini(PluginCall call) {
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://gemini.google.com/app"));
+            intent.addCategory(Intent.CATEGORY_BROWSABLE);
+            getActivity().startActivity(intent);
+            call.resolve();
+        } catch (Exception error) { call.reject("Não foi possível abrir o Gemini neste aparelho.", error); }
+    }
     private FirebaseAppCheck check;
     private synchronized FirebaseAppCheck instance() {
         if (check == null) {

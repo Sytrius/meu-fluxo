@@ -8,7 +8,7 @@ function setUp(entry=null){
  state.editingReceiptPhotos=[...photos];state.editingReceipt=photos[0]||null;state.receiptOCRUsed=false;draft=null;runId++;
 }
 function controlHTML(){
- return `<div class="field span-2 receipt-multi-field"><label>Fotos da mesma nota (até 8 partes)</label><p class="help">Fotografe a nota por trechos, de perto e com sobreposição. Todas as imagens serão reunidas em uma única compra, sem despesas duplicadas.</p><div class="receipt-photo-inputs"><label class="btn btn-outline btn-sm" for="entry-receipt">${ico('plus')} Selecionar fotos</label><input type="file" id="entry-receipt" class="receipt-hidden-input" accept="image/jpeg,image/png,image/webp" multiple>${root.MeuFluxoNative?.available?'<button type="button" class="btn btn-outline btn-sm" data-action="receipt-camera">Fotografar outro trecho</button>':''}<label class="btn btn-outline btn-sm" ${root.MeuFluxoNative?.available?'hidden':''} for="entry-receipt-camera">${ico('camera')} Fotografar outro trecho</label><input type="file" id="entry-receipt-camera" class="receipt-hidden-input" accept="image/jpeg,image/png,image/webp" capture="environment"></div><div id="receipt-status" class="receipt-photo-gallery"></div><p class="help">Para notas grandes: 5 a 8 produtos por foto, luz uniforme, papel plano e 20% de sobreposição. Inclua o cabeçalho e o total final.</p><div class="receipt-ocr-actions">${root.MeuFluxoNative?.available?`<button type="button" class="btn btn-primary btn-sm" data-action="receipt-native-scan">${ico('camera')} Digitalizar com ML Kit</button>`:''}<button type="button" class="btn btn-outline btn-sm" data-action="receipt-multi-scan">${ico('scan')} Ler fotos como uma compra</button></div><div id="receipt-ocr-status" class="help" role="status" aria-live="polite"></div><div id="receipt-ocr-review"></div><label id="receipt-review-label" class="receipt-verified" hidden><input type="checkbox" id="receipt-reviewed"> Conferi todos os produtos, preços, descontos e quantidades antes de salvar.</label></div>`;
+ return `<div class="field span-2 receipt-multi-field"><label for="entry-receipt-file">Importar lista da nota</label><p class="help">Peça ao Gemini um arquivo CSV ou XLSX com todos os produtos e baixe no celular. O arquivo será lido somente neste aparelho.</p><input type="file" id="entry-receipt-file" class="input" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"><div id="receipt-ocr-status" class="help" role="status" aria-live="polite"></div><div id="receipt-ocr-review"></div><label id="receipt-review-label" class="receipt-verified" hidden><input type="checkbox" id="receipt-reviewed"> Conferi todos os produtos, preços, descontos e quantidades antes de salvar.</label></div>`;
 }
 function status(msg){const e=$('#receipt-ocr-status');if(e)e.textContent=msg}
 function renderPhotos(){
@@ -134,18 +134,18 @@ async function scan(){
 }
 function renderDraft(){
  const host=$('#receipt-ocr-review');if(!host||!draft)return;
- const items=draft.items.slice(0,140).map(x=>`<div class="receipt-ocr-line"><span>${x.number!==null?'#'+x.number+' · ':''}${esc(x.name)} · ${x.qty} ${esc(x.unit)} <small>(foto ${x.sourcePhotos.map(n=>n+1).join(', ')})</small></span><strong>${money(x.cents)}</strong></div>`).join('');
- host.innerHTML=`<div class="receipt-ocr-panel"><h3 class="panel-title">Uma compra, ${draft.pageCount} foto(s) e ${draft.items.length} item(ns)</h3><p class="help">Loja: ${esc(draft.merchant||'a confirmar')} · Data: ${esc(draft.date||'a confirmar')}</p><div class="receipt-ocr-totals"><span>Itens reconhecidos: <strong>${money(draft.sum)}</strong></span><span>Valor total: <strong>${draft.total===null?'não identificado':money(draft.total)}</strong></span>${draft.expected!==null?`<span>Quantidade impressa: ${draft.expected}</span>`:''}</div>${draft.balanced?'<p class="receipt-ocr-ok">Os valores reconhecidos conferem com o total. Confira nomes e quantidades.</p>':'<div class="note">A leitura não foi conciliada completamente. Confira os itens antes de registrar.</div>'}${draft.issues.length?`<div class="receipt-ocr-warning"><strong>Verificações necessárias:</strong><ul>${draft.issues.map(m=>`<li>${esc(m)}</li>`).join('')}</ul></div>`:''}${items||'<div class="note">Nenhum item foi reconhecido com segurança.</div>'}${draft.pending.length?`<div class="note">${draft.pending.length} linha(s) sem valor líquido confiável. Complete os produtos manualmente.</div>`:''}<details><summary>Texto reconhecido de todas as fotos</summary><pre class="receipt-ocr-raw">${esc(draft.raw)}</pre></details><button type="button" class="btn btn-primary btn-sm" data-action="receipt-multi-apply">Preencher compra para revisão</button><p class="help">Preencher não registra despesas. Confirme os dados no formulário.</p></div>`;
+ const items=draft.items.slice(0,300).map(x=>`<div class="receipt-ocr-line"><span>${x.number!==null?'#'+x.number+' · ':''}${esc(x.name)} · ${x.qty} ${esc(x.unit)}</span><strong>${money(x.cents)}</strong></div>`).join('');
+ host.innerHTML=`<div class="receipt-ocr-panel"><h3 class="panel-title">Uma compra, ${draft.items.length} produto(s)</h3><p class="help">Loja: ${esc(draft.merchant||'a confirmar')} · Data: ${esc(draft.date||'a confirmar')}</p><div class="receipt-ocr-totals"><span>Soma dos produtos: <strong>${money(draft.sum)}</strong></span><span>Total da nota: <strong>${draft.total===null?'não informado':money(draft.total)}</strong></span></div>${draft.issues.length?`<div class="receipt-ocr-warning"><strong>Verificações necessárias:</strong><ul>${draft.issues.map(m=>`<li>${esc(m)}</li>`).join('')}</ul></div>`:''}${items||'<div class="note">Nenhum item foi reconhecido com segurança.</div>'}<button type="button" class="btn btn-primary btn-sm" data-action="receipt-multi-apply">Preencher compra para revisão</button><p class="help">O arquivo não registra despesas. Confira os campos antes de confirmar.</p></div>`;
 }
 function apply(){
- if(!draft||!$('#entry-form'))throw Error('Leia as fotos antes de aplicar.');
+ if(!draft||!$('#entry-form'))throw Error('Importe uma lista antes de aplicar.');
  if(!draft.items.length)throw Error('Nenhum produto reconhecido. Você pode cadastrar manualmente.');
  if(state.items.length&&!confirm('Substituir os itens que já estão no formulário?'))return;
  if(draft.issues.length&&!confirm('A leitura contém valores a conferir. Você precisará corrigir e completar os itens. Aplicar mesmo assim?'))return;
  const title=$('#entry-title'),merchant=$('#entry-merchant'),date=$('#entry-date'),amount=$('#entry-amount');
  if(!title||!merchant||!date||!amount)throw Error('O formulário da compra não está aberto.');
  if(draft.merchant){if(merchant.value.trim()&&merchant.value!==draft.merchant&&!confirm('Substituir o estabelecimento informado?'))return;merchant.value=draft.merchant}
- if(draft.date)date.value=draft.date;
+ if(draft.date)date.value=draft.date;else date.value='';
  if(!title.value.trim())title.value=(draft.merchant?'Compra em '+draft.merchant:'Compra de supermercado').slice(0,120);
  const total=draft.total??draft.sum;if(total>0)amount.value=(total/100).toFixed(2).replace('.',',');
  state.items=draft.items.map(x=>({name:x.name,qty:x.qty,unit:x.unit,cents:x.cents,amount:(x.cents/100).toFixed(2).replace('.',',')}));
@@ -158,8 +158,8 @@ function apply(){
 }
 function acceptExternalDraft(result,source){
  if(loading)throw Error('Conclua a leitura local antes de aplicar a IA.');
- if(!photos.length||!result||!Array.isArray(result.items))throw Error('A prévia de IA é inválida.');
- draft={...result,pageCount:photos.length,source:source||'IA',raw:result.raw||'Análise visual externa sujeita a revisão.'};
+ if(!result||!Array.isArray(result.items))throw Error('A lista importada é inválida.');
+ draft={...result,pageCount:0,source:source||'arquivo',raw:result.raw||'Lista importada sujeita a revisão.'};
  state.receiptOCRUsed=false;
  renderDraft();
  status('Prévia '+(source||'IA')+' recebida. Confira os valores e clique em Preencher compra para revisão.');

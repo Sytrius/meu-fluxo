@@ -3,23 +3,28 @@
 'use strict';
 const H=()=>root.MeuFluxoReceiptHybrid;
 function controls(){
- const available=root.MeuFluxoReceiptAI?.configured?.();
  return `<section class="field span-2 hybrid-receipt">
- <h3 class="panel-title">Leitura inteligente</h3>
- <p class="help">A leitura local acima continua disponível sem internet. Estes recursos são opcionais.</p>
+ <h3 class="panel-title">Criar a lista no Gemini</h3>
+ <p class="help">Abra o Gemini, envie as fotos da nota e peça uma planilha com todos os produtos. Baixe o arquivo e selecione em “Importar lista da nota” acima.</p>
  <div class="hybrid-choice">
-  <div><strong>1. Consulta QR Code NFC-e</strong><p class="help">Abra a página fiscal oficial de Pernambuco. Ela pode mostrar os produtos, mas não fornece importação automática garantida.</p>
-   <div class="hybrid-actions"><button type="button" class="btn btn-outline btn-sm" data-action="hybrid-qr-scan">Ler QR das fotos</button>
+  <div><strong>Passo 1: abrir o Gemini</strong><p class="help">As fotos são enviadas por você no Gemini, fora do Meu Fluxo. Verifique as condições de privacidade da sua conta Google.</p>
+   <div class="hybrid-actions"><button type="button" class="btn btn-primary btn-sm" data-action="hybrid-gemini-open">Abrir Gemini</button><button type="button" class="btn btn-outline btn-sm" data-action="hybrid-prompt-copy">Copiar instruções</button></div>
+   <details><summary>Instruções para colar no Gemini</summary><pre class="receipt-ocr-raw" id="receipt-gemini-prompt">${esc(PROMPT)}</pre></details><div id="hybrid-ai-status" class="help" aria-live="polite"></div>
+  </div>
+  <div><strong>Consulta fiscal opcional</strong><p class="help">O portal oficial pode ajudar a conferir a nota, mas nem sempre exibe a lista de produtos.</p>
+   <div class="hybrid-actions">
    <input id="hybrid-qr-input" class="input" maxlength="1800" placeholder="Ou cole o link do QR / chave de 44 dígitos">
    <button type="button" class="btn btn-outline btn-sm" data-action="hybrid-qr-paste">Consultar</button></div>
    <div id="hybrid-qr-result" class="help" aria-live="polite"></div>
   </div>
-  <div><strong>2. Análise Gemini (online)</strong><p class="help">Somente com sua autorização: fotos da nota serão enviadas ao Google. No plano gratuito os dados enviados podem ser usados para melhorar serviços. Exige Firebase AI Logic + App Check configurados pelo administrador.</p>
-   <button type="button" class="btn btn-primary btn-sm" data-action="hybrid-ai-start">${available?'Analisar com Gemini':'IA — configuração pendente'}</button>
-   <div id="hybrid-ai-status" class="help" aria-live="polite">${available?'Nenhuma imagem é enviada automaticamente.':'OCR local e QR continuam disponíveis.'}</div>
-  </div>
  </div></section>`;
 }
+const PROMPT=`Transcreva TODAS as fotos desta mesma nota fiscal como UMA compra. As fotos podem se sobrepor. Use a numeração impressa dos itens para retirar duplicatas entre fotos, mas preserve linhas diferentes do mesmo produto. Não invente dados ilegíveis. Confira os valores brutos, descontos e líquidos; a soma dos valores líquidos deve bater com o valor a pagar impresso. Se faltar algo, indique ao final o que precisa de revisão.
+
+Gere um arquivo CSV UTF-8 para download (preferencialmente) ou XLSX, com uma única tabela e estas colunas exatas:
+Item;Código de Barras;Descrição do Produto;Quantidade;Unidade;Preço Unitário (R$);Desconto (R$);Valor Líquido (R$)
+
+Antes do cabeçalho, adicione quatro linhas com exatamente duas células: Loja;[nome], Data;[AAAA-MM-DD], Total pago;[valor em reais], Quantidade de itens;[número impresso]. Se não conseguir ler um desses campos, deixe a segunda célula vazia. Cada item deve ocupar uma linha. Valores usam vírgula decimal, sem fórmula. Quantidade e preço unitário devem corresponder ao valor bruto impresso; desconto é positivo e valor líquido é o total daquele item depois do desconto. Nunca use ponto e vírgula dentro de uma célula sem aspas CSV. Não junte produtos. Entregue o ARQUIVO para baixar, não apenas uma tabela no chat.`;
 function showQr(raw){
  const url=H().officialURL(raw),area=$('#hybrid-qr-result');
  if(url){if(area)area.innerHTML='<a href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">Abrir consulta oficial NFC-e de Pernambuco</a><p>Você poderá conferir os produtos no portal, mas não há importação automática garantida.</p>';return true}
@@ -71,10 +76,19 @@ async function analyzeAI(){
 }
 async function action(button){
  const a=button.dataset.action;
- if(a==='hybrid-qr-scan'){await scanQR();return true}
  if(a==='hybrid-qr-paste'){showQr($('#hybrid-qr-input')?.value||'');return true}
- if(a==='hybrid-ai-start'){await analyzeAI();return true}
+ if(a==='hybrid-prompt-copy'){
+  if(root.navigator?.clipboard?.writeText)await root.navigator.clipboard.writeText(PROMPT);
+  else {const field=document.createElement('textarea');field.value=PROMPT;document.body.append(field);field.select();const copied=document.execCommand('copy');field.remove();if(!copied)throw Error('Selecione e copie as instruções exibidas nesta tela.');}
+  const status=$('#hybrid-ai-status');if(status)status.textContent='Instruções copiadas. Cole no Gemini junto com as fotos.';
+  return true;
+ }
+ if(a==='hybrid-gemini-open'){
+  if(root.MeuFluxoNative?.available)await root.MeuFluxoNative.openGemini();
+  else root.open('https://gemini.google.com/app','_blank','noopener,noreferrer');
+  return true;
+ }
  return false;
 }
-root.MeuFluxoReceiptHybridUI={controls,action,showQr,scanQR};
+root.MeuFluxoReceiptHybridUI={controls,action,showQr};
 })(typeof globalThis!=='undefined'?globalThis:this);
