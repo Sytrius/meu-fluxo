@@ -1,1 +1,50 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="120" fill="#0f272d"/><rect x="98" y="98" width="316" height="316" rx="92" fill="#0a886e"/><path d="M155 310 222 235l60 48 83-97" fill="none" stroke="#f2fffa" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/><circle cx="365" cy="186" r="16" fill="#f2fffa"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <clipPath id="tile"><rect width="512" height="512" rx="125"/></clipPath>
+    <linearGradient id="base" x2="1" y2="1" gradientUnits="objectBoundingBox">
+      <stop stop-color="#092B42"/>
+      <stop offset=".5" stop-color="#071C30"/>
+      <stop offset="1" stop-color="#0B3541"/>
+    </linearGradient>
+    <radialGradient id="glowA" cx="0" cy="0" r="1">
+      <stop stop-color="#34E6B1" stop-opacity=".87"/>
+      <stop offset=".6" stop-color="#0F766E" stop-opacity=".72"/>
+      <stop offset="1" stop-color="#0F766E" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowB" cx="1" cy="1" r=".8">
+      <stop stop-color="#34E6B1" stop-opacity=".9"/>
+      <stop offset="1" stop-color="#0F766E" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="edge" x2="1" y2="1">
+      <stop stop-color="#64F8D1"/>
+      <stop offset=".42" stop-color="#0F766E"/>
+      <stop offset=".63" stop-color="#12384A"/>
+      <stop offset="1" stop-color="#34E6B1"/>
+    </linearGradient>
+    <linearGradient id="upper" x1=".14" y1="1" x2=".92" y2="0">
+      <stop stop-color="#04C9A2"/>
+      <stop offset=".55" stop-color="#96FFE4"/>
+      <stop offset="1" stop-color="#34E6B1"/>
+    </linearGradient>
+    <linearGradient id="lower" x1=".05" y1="1" x2=".93" y2=".1">
+      <stop stop-color="#0AF2C3"/>
+      <stop offset=".53" stop-color="#08B091"/>
+      <stop offset="1" stop-color="#81FCE0"/>
+    </linearGradient>
+    <linearGradient id="fold" x1=".1" y1="1" x2=".85" y2="0">
+      <stop stop-color="#26EBC0"/>
+      <stop offset="1" stop-color="#9CFFE5"/>
+    </linearGradient>
+  </defs>
+  <g clip-path="url(#tile)">
+    <rect width="512" height="512" fill="url(#base)"/>
+    <rect width="512" height="512" fill="url(#glowA)"/>
+    <rect width="512" height="512" fill="url(#glowB)"/>
+    <rect x="2" y="2" width="508" height="508" rx="123" fill="none" stroke="url(#edge)" stroke-width="4"/>
+  </g>
+  <g transform="translate(-6 -8)">
+    <path fill="url(#upper)" d="M135 286C157 211 208 136 282 136h160c-6 35-29 58-59 58H283c-36 0-53 16-67 43-17 33-34 49-81 49Z"/>
+    <path fill="url(#lower)" d="M84 393c10-37 31-62 72-62h33c27 0 39-11 50-34 16-34 34-61 62-61h100c-3 32-22 58-54 58h-41c-20 48-49 99-111 99Z"/>
+    <path fill="url(#fold)" d="M226 320c10-17 17-37 30-55 13-18 26-29 47-29h98c-3 32-22 58-54 58h-55c-33 0-49 9-66 26Z"/>
+  </g>
+</svg>

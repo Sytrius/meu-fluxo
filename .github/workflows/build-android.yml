@@ -1,4 +1,4 @@
-name: Meu Fluxo Android - gerar APK
+name: Sytrius Fluxo Android - gerar APK
 
 on:
   workflow_dispatch:
@@ -95,21 +95,10 @@ jobs:
           else
             ANDROID_COMPILE_ONLY=true node android-app/scripts/configure-android.mjs
           fi
-      - name: Aplicar logo Meu Fluxo
+      - name: Aplicar identidade visual do Sytrius Fluxo
         run: |
           python -m pip install --quiet Pillow
-          python - <<'PY'
-          from PIL import Image
-          from pathlib import Path
-          src=Path('meu-fluxo-app/icons/icon-512.png')
-          im=Image.open(src).convert('RGBA')
-          base=Path('android-app/android/app/src/main/res')
-          for density,size in [('mdpi',48),('hdpi',72),('xhdpi',96),('xxhdpi',144),('xxxhdpi',192)]:
-              dest=base/('mipmap-'+density)
-              dest.mkdir(parents=True,exist_ok=True)
-              im.resize((size,size),Image.Resampling.LANCZOS).save(dest/'ic_launcher.png')
-              im.resize((size,size),Image.Resampling.LANCZOS).save(dest/'ic_launcher_round.png')
-          PY
+          python android-app/scripts/apply-android-brand.py
 
       - name: Compilar APK de testes
         working-directory: android-app/android
@@ -118,12 +107,15 @@ jobs:
           ./gradlew assembleDebug --no-daemon --stacktrace
           test -s app/build/outputs/apk/debug/app-debug.apk
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs app/build/outputs/apk/debug/app-debug.apk
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging app/build/outputs/apk/debug/app-debug.apk > apk-info.txt
+          grep -F "package: name='io.github.sytrius.meufluxo' versionCode='9' versionName='0.9.0'" apk-info.txt
+          grep -Fx "application-label:'Sytrius Fluxo'" apk-info.txt
 
       - name: Preparar instalador de testes
         run: |
           mkdir -p android-app/dist
-          cp android-app/android/app/build/outputs/apk/debug/app-debug.apk android-app/dist/MeuFluxo-Android-Preview.apk
-          sha256sum android-app/dist/MeuFluxo-Android-Preview.apk > android-app/dist/SHA256.txt
+          cp android-app/android/app/build/outputs/apk/debug/app-debug.apk android-app/dist/SytriusFluxo-Android.apk
+          sha256sum android-app/dist/SytriusFluxo-Android.apk > android-app/dist/SHA256.txt
           cp android-app/README.md android-app/dist/LEIA-ME.md
           printf '%s\n' "Commit: $GITHUB_SHA" "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" > android-app/dist/BUILD.txt
           printf 'AdMob: %s\n' "$(cat android-app/android/admob-mode.txt)" >> android-app/dist/BUILD.txt
@@ -135,9 +127,9 @@ jobs:
       - name: Disponibilizar APK
         uses: actions/upload-artifact@v4
         with:
-          name: MeuFluxo-Android-Preview
+          name: SytriusFluxo-Android
           path: |
-            android-app/dist/MeuFluxo-Android-Preview.apk
+            android-app/dist/SytriusFluxo-Android.apk
             android-app/dist/SHA256.txt
             android-app/dist/BUILD.txt
             android-app/dist/LEIA-ME.md

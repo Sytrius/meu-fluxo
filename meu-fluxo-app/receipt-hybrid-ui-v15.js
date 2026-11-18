@@ -7,7 +7,7 @@ function controls(){
  <h3 class="panel-title">Criar a lista no Gemini</h3>
  <p class="help">Abra o Gemini, envie as fotos da nota e peça uma planilha com todos os produtos. Baixe o arquivo e selecione em “Importar lista da nota” acima.</p>
  <div class="hybrid-choice">
-  <div><strong>Passo 1: abrir o Gemini</strong><p class="help">As fotos são enviadas por você no Gemini, fora do Meu Fluxo. Verifique as condições de privacidade da sua conta Google.</p>
+  <div><strong>Passo 1: abrir o Gemini</strong><p class="help">As fotos são enviadas por você no Gemini, fora do Sytrius Fluxo. Verifique as condições de privacidade da sua conta Google.</p>
    <div class="hybrid-actions"><button type="button" class="btn btn-primary btn-sm" data-action="hybrid-gemini-open">Abrir Gemini</button><button type="button" class="btn btn-outline btn-sm" data-action="hybrid-prompt-copy">Copiar instruções</button></div>
    <details><summary>Instruções para colar no Gemini</summary><pre class="receipt-ocr-raw" id="receipt-gemini-prompt">${esc(PROMPT)}</pre></details><div id="hybrid-ai-status" class="help" aria-live="polite"></div>
   </div>

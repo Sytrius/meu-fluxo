@@ -19,7 +19,7 @@ text=text.replace('ext {',"ext {\n    rgcfaIncludeGoogle = true\n    androidxCre
 await fs.writeFile(variables,text);
 const gradle=new URL('app/build.gradle',root);
 text=await fs.readFile(gradle,'utf8');
-text=text.replace('versionCode 1','versionCode 8').replace('versionName "1.0"','versionName "0.8.0"');
+text=text.replace('versionCode 1','versionCode 9').replace('versionName "1.0"','versionName "0.9.0"');
 text+='\nandroid { signingConfigs { debug { storeFile file("../../preview.keystore"); storePassword "android"; keyAlias "androiddebugkey"; keyPassword "android" } } }\n';
 await fs.writeFile(gradle,text);
 
