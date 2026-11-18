@@ -7,7 +7,7 @@ function signature(e){
    e.type,e.title,e.cents,e.date,e.category,e.method||'Outro',e.merchant||'',
    e.note||'',e.nature||'variable',!!e.recurring,e.receipt||null,(Array.isArray(e.receiptPhotos)&&e.receiptPhotos.length?e.receiptPhotos:e.receipt?[e.receipt]:[]),
    (e.items||[]).map(x=>[x.name,Number(x.qty),x.cents,x.unit||'un']),
-   e.installment||null,e.deletedAt||null,e.accountId||null,e.cardId||null
+   e.installment||null,e.deletedAt||null,e.accountId||null,e.cardId||null,e.marketKind||'auto'
  ]);
 }
 function compare(local,incoming){

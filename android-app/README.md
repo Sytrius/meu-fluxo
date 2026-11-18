@@ -1,6 +1,9 @@
-# Android 0.2 — login nativo e OCR das fotos anexadas
+# Meu Fluxo Android 0.7
 
-O botão **Ler fotos como uma compra** usa ML Kit Latin no Android, inclusive em fotos já anexadas. A imagem original permanece no formulário; uma cópia temporária no cache é usada pelo plugin e removida depois. Cada foto tem limite de 45 segundos. A prévia exige aplicação e confirmação manual; OCR não salva transações. No navegador, Tesseract continua disponível, com limites de carregamento e reconhecimento.
+- **Mercado** mostra um mês por vez. Use as setas ou deslize sobre a lista. Compras são agrupadas pelo mês e ordenadas pela data.
+- **Histórico por produto** compara preços médios por unidade, kg ou litro usando os itens cadastrados. Produtos com aumento aparecem primeiro. Meses sem compra ficam sem ponto.
+- **Transações** e **Mercado** permitem editar uma compra. No formulário, o campo **Aba Mercado** permite confirmar se ela é uma reposição, compra principal ou deve ficar fora da aba.
+- **Importar lista da nota** aceita CSV e XLSX. Para transformar fotos em uma lista, abra o Gemini e use as instruções de transcrição. Confira o resultado no Meu Fluxo antes de registrar.
 
 ## Configuração necessária no Firebase (proprietário)
 
@@ -29,10 +32,6 @@ O artefato de Actions inclui APK, SHA256.txt, BUILD.txt e este documento. Confir
 
 ## Evidência e limites dos testes
 
-Os testes automatizados verificam fotos existentes roteadas ao ML Kit, falha/repetição sem perder anexos/campos, timeout, deduplicação multipágina, backup e ausência de gravação automática. São testes com ponte nativa simulada, não prova de OCR em aparelho. A compilação Gradle verifica integração e assinatura, não valida login real.
+O fluxo de teste exercita a interface empacotada em Chromium com larguras de 320 e 390 px. Ele verifica a navegação horizontal, os lançamentos do mês, a atualização dos preços, a edição persistente e o acesso às demais abas. A compilação Gradle verifica integração e assinatura.
 
-Antes de anunciar correção validada em Android, testar em aparelho com Google Play Services: selecionar/cancelar conta; retornar ao app; reiniciar online e offline; sair/reentrar no mesmo UID; ler duas fotos anexadas e foto ilegível offline; repetir após falha; aplicar sem salvar; confirmar backup e dados antigos. Uma build sem configuração Firebase não prova login e não deve ser instalada.
-
-## Investigação Tesseract
-
-O botão anterior iniciava `createWorker('por')` mesmo no APK. O workflow copiava worker, todos os pares WASM/JS e `por.traineddata.gz` para `www/vendor/ocr`; os caminhos usam a origem local Capacitor. Não havia timeout em script, inicialização, reconhecimento ou término do worker. A captura comprova espera durante inicialização, mas sem logcat não distingue falha de worker/WASM/modelo. Por isso a causa exata da inicialização não é afirmada: no Android esse caminho foi substituído por ML Kit; no navegador ele recebeu limites explícitos. Não foi necessário baixar modelo português para o ML Kit Latin, que reconhece português.
+A interface ainda precisa de teste em aparelho físico. Isso inclui a atualização sobre a versão anterior, o seletor de arquivos e o login Google.

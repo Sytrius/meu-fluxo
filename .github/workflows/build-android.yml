@@ -51,6 +51,11 @@ jobs:
 
       - name: Criar pacote offline e ponte nativa
         run: node android-app/scripts/prepare-web.mjs
+      - name: Testar a interface em telas de celular
+        run: |
+          npm install --prefix "$RUNNER_TEMP/mobile-ui" --no-audit --no-fund --ignore-scripts playwright@1.65.0
+          "$RUNNER_TEMP/mobile-ui/node_modules/.bin/playwright" install --with-deps --only-shell chromium
+          node android-app/scripts/check-mobile-ui.cjs "$RUNNER_TEMP/mobile-ui"
       - name: Verificar contrato com SDK Firebase real
         run: |
           npm install --prefix "$RUNNER_TEMP/firebase-contract" --no-audit --no-fund --ignore-scripts firebase@11.10.0

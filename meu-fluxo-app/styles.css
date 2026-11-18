@@ -118,3 +118,64 @@
 #hybrid-ai-status,#hybrid-qr-result{font-size:12px;overflow-wrap:anywhere;line-height:1.55}
 #hybrid-qr-result a{color:var(--brand-dark);font-weight:700;text-decoration:underline}
 @media(max-width:650px){.hybrid-choice{grid-template-columns:1fr}.hybrid-choice>div{padding:12px}}
+
+/* Compras de mercado e edição de transações */
+.market-page{max-width:760px;margin-inline:auto}
+.market-deck{touch-action:pan-y pinch-zoom}
+.market-period{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;text-align:center;gap:10px;margin-bottom:12px}
+.market-period button{width:44px;min-height:44px;padding:0;font-size:24px}
+.market-period h2{text-transform:capitalize;font-size:17px}
+.market-row{display:flex;align-items:center;justify-content:space-between;gap:8px 12px}
+.market-row>div,.market-row>span{min-width:0;overflow-wrap:anywhere}
+.market-row>strong{white-space:nowrap;font-variant-numeric:tabular-nums}
+.market-total{padding:12px 14px;background:var(--brand-2);color:var(--brand-dark);border-radius:11px}
+.market-total strong{font-size:18px}
+.market-purchase{padding:12px 14px;margin-top:12px}
+.market-purchase time{font-size:12px;font-weight:750}
+.market-purchase h3{margin-top:4px;overflow-wrap:anywhere}
+.market-purchase header .btn{min-height:44px}
+.market-label{display:inline-block;border-radius:6px;padding:3px 6px;background:var(--brand-2);color:var(--brand-dark);font-size:11px;font-weight:750}
+.market-refill{background:var(--panel-2);color:var(--text)}
+.market-items{list-style:none;padding:0;margin:10px 0}
+.market-items li{font-size:13px;border-bottom:1px solid var(--line);padding:7px 0;align-items:baseline}
+.market-purchase footer{margin-top:10px}
+.market-history{margin:16px 0 12px}
+.market-product{margin-top:12px}
+.market-price-summary{margin-top:12px;flex-wrap:wrap}
+.market-graph{width:100%;height:auto;max-height:155px;display:block;margin-top:7px}
+.market-graph line{stroke:var(--brand);stroke-width:2.5}
+.market-graph .market-gridline{stroke:var(--line);stroke-width:1}
+.market-graph circle{fill:var(--brand)}
+.market-points{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));list-style:none;padding:0;margin:0 0 10px;gap:4px;text-align:center}
+.market-points li{font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.market-points strong{display:block;color:var(--text)}
+.transaction-list{margin-top:10px}
+.transaction-record{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px 16px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.transaction-record:last-child{border-bottom:0}
+.transaction-info{overflow-wrap:anywhere}
+.transaction-info .muted{margin-top:4px;font-size:12px}
+.transaction-actions{display:flex;align-items:center;gap:8px}
+.transaction-actions .icon-btn,.transaction-actions .btn{min-width:44px;min-height:44px}
+#entry-market-field[hidden]{display:none}
+.mobile-more{display:none}
+@media(max-width:850px){
+ .mobile-nav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));overflow:visible;padding-inline:4px}
+ .mobile-nav button,.mobile-more summary{width:100%;min-width:0;min-height:44px}
+ .mobile-more{display:block;position:relative}
+ .mobile-more summary{list-style:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--muted);font-size:9px;font-weight:700;cursor:pointer}
+ .mobile-more summary::-webkit-details-marker{display:none}
+ .mobile-more summary.active,.mobile-more[open] summary{color:var(--brand)}
+ .mobile-more-links{position:absolute;bottom:calc(100% + 10px);right:3px;min-width:178px;background:var(--panel);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow);padding:6px}
+ .mobile-more-links button{flex-direction:row;justify-content:flex-start;gap:10px;padding-inline:12px;font-size:13px}
+}
+@media(max-width:650px){
+ .transaction-record{grid-template-columns:minmax(0,1fr) auto;gap:6px 10px}
+ .transaction-actions{grid-column:1/-1}
+ .item-line{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.4fr) 44px;gap:5px}
+ .item-line [data-item-field="name"]{grid-column:1/-1}
+ .item-line .input,.item-line .select{font-size:14px;min-width:0;padding-inline:6px}
+ .item-line .icon-btn{width:44px;height:44px}
+ .market-page .page-head{gap:10px;margin-bottom:15px}
+ .market-page .page-title{font-size:25px}
+ .market-points strong{font-size:11px}
+}
