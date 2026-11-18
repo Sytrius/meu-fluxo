@@ -1,9 +1,22 @@
-# Meu Fluxo Android 0.7
+# Meu Fluxo Android 0.8
 
 - **Mercado** mostra um mês por vez. Use as setas ou deslize sobre a lista. Compras são agrupadas pelo mês e ordenadas pela data.
 - **Histórico por produto** compara preços médios por unidade, kg ou litro usando os itens cadastrados. Produtos com aumento aparecem primeiro. Meses sem compra ficam sem ponto.
 - **Transações** e **Mercado** permitem editar uma compra. No formulário, o campo **Aba Mercado** permite confirmar se ela é uma reposição, compra principal ou deve ficar fora da aba.
 - **Importar lista da nota** aceita CSV e XLSX. Para transformar fotos em uma lista, abra o Gemini e use as instruções de transcrição. Confira o resultado no Meu Fluxo antes de registrar.
+- **Publicidade** ocupa uma faixa no Início, com uma área de separação do menu. Ela é recolhida ao mudar de aba, abrir um formulário ou quando um anúncio não puder ser carregado.
+
+## Testar e ativar publicidade
+
+O APK de teste usa os IDs de demonstração do Google. Instale por cima da versão anterior, conecte o celular e abra **Início**. Confira a faixa acima do menu e toque em **Mercado** para verificar que ela some. Anúncios de teste não geram receita.
+
+1. Crie sua conta no [Google AdMob](https://admob.google.com/). Complete o cadastro e o perfil de pagamentos no Google.
+2. Adicione **Meu Fluxo** como app Android. Se ele ainda estiver disponível apenas no GitHub, selecione a opção de app não publicado em loja compatível. O pacote Android é `io.github.sytrius.meufluxo`. [Adicionar um app ao AdMob](https://support.google.com/admob/answer/9989980?hl=pt-BR)
+3. Crie uma unidade do tipo **Banner**. Copie o ID do app (com `~`) e o ID da unidade (com `/`). [Criar um banner](https://support.google.com/admob/answer/7311346?hl=pt-BR)
+4. Para a distribuição ao público, configure as mensagens em **Privacidade e mensagens** conforme as regiões atendidas e documente o uso do SDK na política de privacidade e na ficha da loja. A ponte Android consulta as escolhas de consentimento antes de solicitar anúncios de produção. Os lançamentos e notas não entram nas solicitações de anúncios.
+5. O Google precisa vincular o app a uma loja compatível para iniciar a revisão de veiculação. Se o painel pedir a verificação por `app-ads.txt`, publique o arquivo no site do desenvolvedor vinculado à ficha da loja. [Revisão do app](https://support.google.com/admob/answer/10564477?hl=pt-BR) · [Verificação por app-ads.txt](https://support.google.com/admob/answer/14538460?hl=pt-BR)
+
+Para compilar com o banner do proprietário, defina `ADMOB_ANDROID_APP_ID` e `ADMOB_ANDROID_BANNER_ID` no ambiente de build (variáveis do repositório no Actions) e selecione `ADMOB_MODE=live`. Sem essa seleção, o build sempre usa IDs de teste. Para distribuição de produção, use uma chave de assinatura privada e valide o banner em aparelho inscrito como dispositivo de teste antes de veicular.
 
 ## Configuração necessária no Firebase (proprietário)
 
@@ -32,6 +45,6 @@ O artefato de Actions inclui APK, SHA256.txt, BUILD.txt e este documento. Confir
 
 ## Evidência e limites dos testes
 
-O fluxo de teste exercita a interface empacotada em Chromium com larguras de 320 e 390 px. Ele verifica a navegação horizontal, os lançamentos do mês, a atualização dos preços, a edição persistente e o acesso às demais abas. A compilação Gradle verifica integração e assinatura.
+O fluxo de teste exercita a interface empacotada em Chromium com larguras de 320 e 390 px. Ele verifica a navegação horizontal, os lançamentos do mês, a atualização dos preços, a edição persistente e o acesso às demais abas. Com a ponte de anúncios simulada, também verifica o espaço do banner e a ocultação em formulários, em outras abas ou quando não há anúncio. A compilação Gradle verifica integração e assinatura.
 
 A interface ainda precisa de teste em aparelho físico. Isso inclui a atualização sobre a versão anterior, o seletor de arquivos e o login Google.

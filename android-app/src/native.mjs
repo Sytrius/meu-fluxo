@@ -92,4 +92,5 @@ if (available) {
     }
   }).catch(()=>{});
 }
-globalThis.MeuFluxoNative={available,scanReceipt,scanQR,recognizePhoto,googleAuth,capturePhoto,readPhotoQR:uri=>recognizePhoto(uri,true),appCheck,openGemini:()=>appCheck.openGemini()};
+const homeAds = registerPlugin('HomeAds');
+globalThis.MeuFluxoNative={available,scanReceipt,scanQR,recognizePhoto,googleAuth,capturePhoto,readPhotoQR:uri=>recognizePhoto(uri,true),appCheck,openGemini:()=>appCheck.openGemini(),homeAds};

@@ -1,5 +1,5 @@
-const CACHE = 'meu-fluxo-offline-v1.7.0';
-const ASSETS = ['./','./index.html','./app.js','./chat-parser.js','./backup-v2.js','./finance-v13.js','./finance-ui-v13.js','./receipts-v14.js','./receipts-ui-v14.js','./market.js','./market-ui.js','./receipt-multipage-v15.js','./receipt-file-v16.js','./receipt-capture-v15.js','./receipt-hybrid-v15.js','./receipt-hybrid-ui-v15.js','./firebase-config.js','./styles.css','./manifest.webmanifest','./icons/icon.svg','./icons/icon-192.png','./icons/icon-512.png'];
+const CACHE = 'meu-fluxo-offline-v1.8.0';
+const ASSETS = ['./','./index.html','./app.js','./chat-parser.js','./backup-v2.js','./finance-v13.js','./finance-ui-v13.js','./receipts-v14.js','./receipts-ui-v14.js','./market.js','./market-ui.js','./receipt-multipage-v15.js','./receipt-file-v16.js','./receipt-capture-v15.js','./receipt-hybrid-v15.js','./receipt-hybrid-ui-v15.js','./home-ads.js','./firebase-config.js','./styles.css','./manifest.webmanifest','./icons/icon.svg','./icons/icon-192.png','./icons/icon-512.png'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting()));
 });

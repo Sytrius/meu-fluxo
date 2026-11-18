@@ -31,8 +31,14 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BUILD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          gh release create "android-preview-0.7-${BUILD_SHA:0:8}" \
+          ADS_MODE="$(sed -n 's/^AdMob: //p' release/BUILD.txt)"
+          case "$ADS_MODE" in
+            test) ADS_NOTE='Esta versão usa anúncios de teste do Google. Eles não geram receita.' ;;
+            live) ADS_NOTE='A veiculação e a receita dependem da aprovação e disponibilidade de anúncios no AdMob.' ;;
+            *) echo 'Modo AdMob ausente ou inválido no artefato.'; exit 1 ;;
+          esac
+          gh release create "android-preview-0.8-${BUILD_SHA:0:8}" \
             release/MeuFluxo-Android-Preview.apk release/SHA256.txt release/BUILD.txt release/LEIA-ME.md \
             --repo "$GITHUB_REPOSITORY" --target "$BUILD_SHA" --prerelease \
-            --title 'Meu Fluxo Android 0.7 — Mercado e edição de transações' \
-            --notes 'Compras por mês, reposições separadas por data, histórico de preço por produto e botão Editar na lista de transações. APK verificado e assinado com o mesmo certificado dos previews 0.2 a 0.6. Testes automatizados incluem navegação por toque e edição persistente em Chromium com tela de celular. Teste funcional em aparelho físico pendente.'
+            --title "Meu Fluxo Android 0.8 — publicidade no Início ($ADS_MODE)" \
+            --notes "Faixa de publicidade separada do menu inferior. APK com a mesma assinatura dos previews anteriores. $ADS_NOTE Consulte o LEIA-ME.md para validar em aparelho."

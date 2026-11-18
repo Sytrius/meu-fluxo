@@ -1,21 +1,23 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
-const http = require('node:http');
 const path = require('node:path');
 const { createRequire } = require('node:module');
 const { chromium } = createRequire(path.resolve(process.argv[2], 'package.json'))('playwright');
 
 const site = path.resolve(__dirname, '../www');
 const types = { '.js':'text/javascript', '.html':'text/html', '.css':'text/css', '.svg':'image/svg+xml' };
-const server = http.createServer(async (request, response) => {
-  const url = new URL(request.url, 'http://localhost');
+const testOrigin = 'https://meu-fluxo.example';
+async function serveApp(context) {
+  await context.route('**/*', async route => {
+  const url = new URL(route.request().url());
+  if (url.origin !== testOrigin) return route.abort();
   const file = path.resolve(site, '.' + decodeURIComponent(url.pathname === '/' ? '/index.html' : url.pathname));
-  if (!file.startsWith(site + path.sep)) { response.writeHead(403).end(); return; }
+  if (!file.startsWith(site + path.sep)) return route.fulfill({ status:403 });
   try {
-    const content = await fs.readFile(file);
-    response.writeHead(200, { 'Content-Type': types[path.extname(file)] || 'application/octet-stream' }).end(content);
-  } catch { response.writeHead(404).end(); }
-});
+    return route.fulfill({ contentType:types[path.extname(file)] || 'application/octet-stream',body:await fs.readFile(file) });
+  } catch { return route.fulfill({ status:404 }); }
+  });
+}
 
 const item = (name, qty, unit, cents) => ({ name, qty, unit, cents });
 function expense(id, date, title, items, category = 'Alimentação') {
@@ -75,6 +77,7 @@ async function swipeLeft(page) {
 async function run(browser, url, width) {
   const context = await browser.newContext({ viewport:{width,height:820}, isMobile:true, hasTouch:true, deviceScaleFactor:2,
     locale:'pt-BR', serviceWorkers:'block' });
+  await serveApp(context);
   await context.route('**/firebase-config.js', route => route.fulfill({ contentType:'text/javascript', body:'globalThis.MEU_FLUXO_FIREBASE_CONFIG={};' }));
   try {
     const page = await seed(context,url);
@@ -144,16 +147,63 @@ async function run(browser, url, width) {
   } finally { await context.close(); }
 }
 
+async function checkAdPlacement(browser,width) {
+  const context = await browser.newContext({ viewport:{width,height:820}, isMobile:true, hasTouch:true, serviceWorkers:'block' });
+  await serveApp(context);
+  await context.route('**/native.js', route => route.fulfill({contentType:'text/javascript',body:`
+    const listeners = {};
+    window.adSlots = [];
+    window.emitBannerUnavailable = () => listeners.bannerUnavailable();
+    window.MeuFluxoNative = { available:true, googleAuth:{ getCurrentUser:async () => ({user:null}) }, homeAds:{
+      addListener:async (name,callback) => {listeners[name]=callback},
+      setSlot:async frame => {window.adSlots.push(frame)},
+      openPrivacy:async () => ({status:'test'})
+    }};
+  `}));
+  try {
+    const page = await context.newPage();
+    await page.goto(testOrigin);
+    const band = page.locator('#home-ad-band');
+    await band.waitFor({state:'visible'});
+    await fit(page);
+    const geometry = await page.evaluate(() => {
+      const slot = document.querySelector('.home-ad-slot').getBoundingClientRect();
+      const button = document.querySelector('.mobile-nav button').getBoundingClientRect();
+      return {width:slot.width,height:slot.height,gap:button.top-slot.bottom,last:adSlots.at(-1)};
+    });
+    assert.ok(geometry.width >= 320 && geometry.height === 50 && geometry.gap >= 12);
+    assert.equal(geometry.last.visible,true);
+    await page.getByRole('button',{name:'Novo lançamento',exact:true}).tap();
+    await band.waitFor({state:'hidden'});
+    assert.equal(await page.evaluate(() => adSlots.at(-1).visible),false);
+    await page.getByRole('button',{name:'Cancelar',exact:true}).tap();
+    await band.waitFor({state:'visible'});
+    await page.locator('.mobile-more summary').tap();
+    await band.waitFor({state:'hidden'});
+    await page.locator('.mobile-more summary').tap();
+    await band.waitFor({state:'visible'});
+    await nav(page,'Mercado').tap();
+    await band.waitFor({state:'detached'});
+    assert.equal(await page.evaluate(() => adSlots.at(-1).visible),false);
+    await nav(page,'Início').tap();
+    await band.waitFor({state:'visible'});
+    await page.evaluate(() => emitBannerUnavailable());
+    await band.waitFor({state:'hidden'});
+    await fit(page);
+    console.log(`Publicidade ${width}px: área própria, separação do menu e ocultação ao editar, navegar ou ficar sem anúncio.`);
+  } finally { await context.close(); }
+}
+
 async function main() {
-  await new Promise(resolve => server.listen(0,'127.0.0.1',resolve));
   let browser;
   try {
-    browser = await chromium.launch();
-    const url = 'http://127.0.0.1:' + server.address().port;
-    for (const width of [320,390]) await run(browser,url,width);
+    browser = await chromium.launch(process.env.MEU_FLUXO_TEST_CHROME ? {channel:'chrome'} : {});
+    for (const width of [320,390]) {
+      await run(browser,testOrigin,width);
+      await checkAdPlacement(browser,width);
+    }
   } finally {
     await browser?.close();
-    server.close();
   }
 }
 

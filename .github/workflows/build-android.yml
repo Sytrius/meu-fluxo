@@ -85,6 +85,9 @@ jobs:
       - name: Configurar autenticação e assinatura Android
         env:
           GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+          ADMOB_MODE: ${{ vars.ADMOB_MODE }}
+          ADMOB_ANDROID_APP_ID: ${{ vars.ADMOB_ANDROID_APP_ID }}
+          ADMOB_ANDROID_BANNER_ID: ${{ vars.ADMOB_ANDROID_BANNER_ID }}
         run: |
           if [ -n "$GOOGLE_SERVICES_JSON" ]; then
             printf '%s' "$GOOGLE_SERVICES_JSON" > android-app/google-services.json
@@ -123,6 +126,7 @@ jobs:
           sha256sum android-app/dist/MeuFluxo-Android-Preview.apk > android-app/dist/SHA256.txt
           cp android-app/README.md android-app/dist/LEIA-ME.md
           printf '%s\n' "Commit: $GITHUB_SHA" "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" > android-app/dist/BUILD.txt
+          printf 'AdMob: %s\n' "$(cat android-app/android/admob-mode.txt)" >> android-app/dist/BUILD.txt
           if [ -s android-app/android/app/google-services.json ]; then
             echo 'Firebase Android: configured' >> android-app/dist/BUILD.txt
           else

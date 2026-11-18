@@ -181,3 +181,12 @@
  .market-page .page-title{font-size:25px}
  .market-points strong{font-size:11px}
 }
+
+#home-ad-band[hidden]{display:none}
+@media(max-width:850px){
+ #home-ad-band{grid-column:1/-1;margin-inline:-4px;padding:7px 0 12px;background:var(--panel-2);
+   border-block:1px solid var(--line);text-align:center;color:var(--muted);pointer-events:none}
+ #home-ad-band span{display:block;font-size:11px;line-height:15px;margin-bottom:4px}
+ #home-ad-band .home-ad-slot{height:50px;width:100%}
+ .has-home-ad .workspace{padding-bottom:calc(200px + env(safe-area-inset-bottom))}
+}
