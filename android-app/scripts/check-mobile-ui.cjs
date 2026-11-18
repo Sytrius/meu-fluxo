@@ -82,6 +82,14 @@ async function run(browser, url, width) {
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
 
+    await fit(page);
+    console.log(await page.locator('.mobile-nav [data-nav="market"]').evaluate(button => {
+      const rect = button.getBoundingClientRect();
+      const bar = getComputedStyle(button.closest('.mobile-nav'));
+      const hit = document.elementFromPoint(rect.x+rect.width/2,rect.y+rect.height/2);
+      return { width:innerWidth, height:innerHeight, viewport:visualViewport.height, scale:visualViewport.scale,
+        scrollWidth:document.documentElement.scrollWidth, rect:rect.toJSON(), position:bar.position, z:bar.zIndex, hit:hit?.className };
+    }));
     await nav(page,'Mercado').tap();
     assert.match(await page.locator('#market-month-label').textContent(),/novembro/i);
     assert.deepEqual(await page.locator('.market-purchase time').allTextContents(),['05/11/2026','23/11/2026']);
